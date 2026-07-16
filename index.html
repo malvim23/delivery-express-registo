@@ -452,7 +452,7 @@ function defaultOperations(){
     { id:'dhl_coimbra', name:'DHL COIMBRA', sector:'Parcel', active:true, fields:[R('entregas','Entregas','total'), R('entregues','Entregues','entregues'), R('recolhas','Recolhas'), R('incidencias','Incidências'), R('nao_visitado','N. Visitado')], repeating:null, driverField:{enabled:true, list:[]} },
     { id:'ups', name:'UPS', sector:'Parcel', active:true, fields:[R('entregas','Entregas','total'), R('entregues','Entregues','entregues'), R('recolhas','Recolhas'), R('incidencias','Incidências'), R('nao_visitado','N. Visitado')], repeating:null, driverField:{enabled:true, list:[]} },
     { id:'dominos', name:"DOMINO'S PIZZA", sector:'Restauração', active:true, fields:[], driverField:null, repeating:{ entityLabel:'Motorista', entities:['Misael','Marcos C.','Everton Santos','Elvine','Silas Fernandes','Matheus Martins','Diogo Cabo','Roberto','Samuel','Pedro','David Silva','Patric','Pedro Fernandes','Isaac','Henrique Crosio','Joseny Luis','Paulo / Ruben','Antonio Martins'], entityMeta:{'Misael':{loja:'Loures'},'Marcos C.':{loja:'Odivelas'},'Everton Santos':{loja:'Areeiro'},'Elvine':{loja:'Areeiro'},'Silas Fernandes':{loja:'Campo Ourique'},'Matheus Martins':{loja:'Expo Sul'},'Diogo Cabo':{loja:'Algés'},'Roberto':{loja:'Carcavelos'},'Samuel':{loja:'Oeiras'},'David Silva':{loja:'Expo Norte'},'Patric':{loja:'Avenidas'},'Pedro Fernandes':{loja:'Sta Iria Azóia'},'Isaac':{loja:'Montijo'},'Henrique Crosio':{loja:'Espinho'},'Joseny Luis':{loja:'Amial'}}, fields:[R('entregas','Entregas','entregues')] } },
-    { id:'gls', name:'GLS', sector:'Parcel', active:true, fields:[], driverField:null, repeating:{ entityLabel:'Motorista', entities:['Douglas Barcelos','Gabriel'], entityMeta:{}, fields:[R('parcel_shop_inicio','Parcel Shop Início'), R('entregas','Entregas planeadas','total'), R('entregues','Entregues','entregues'), R('recolhas','Recolhas'), R('incidencia','Incidência'), R('nao_visitado','Não Visitado'), R('parcel_shop_fim','Parcel Shop Fim')] } },
+    { id:'gls', name:'GLS', sector:'Parcel', active:true, fields:[], driverField:null, repeating:{ entityLabel:'Motorista', entities:['Douglas Barcelos','Gabriel'], entityMeta:{}, fields:[R('parcel_shop_inicio','Parcel Shop Início'), R('stops','Stops Planeados','total'), R('entregues','Entregues','entregues'), R('recolhas','Recolhas'), R('incidencia','Incidência'), R('nao_visitado','Não Visitado'), R('parcel_shop_fim','Parcel Shop Fim')] } },
     { id:'hugo_boss', name:'HUGO BOSS', sector:'Vestuário', active:true, fields:[R('entregues','Entregues Total','entregues')], driverField:null, repeating:{ entityLabel:'Região', entities:['Lisboa','Porto'], entityMeta:{}, fields:[R('stops','Stops','total')] } },
     { id:'justsushi', name:'JUSTSUSHI', sector:'Restauração', active:true, fields:[], driverField:null, repeating:{ entityLabel:'Motorista', entities:['Elder Fidelis','Luis','Fernando'], entityMeta:{'Elder Fidelis':{loja:'Évora'},'Luis':{loja:'Coimbra'},'Fernando':{loja:'Coimbra'}}, fields:[R('entregas','Entregas','entregues')] } },
     { id:'nacex_massama', name:'NACEX MASSAMÁ', sector:'Parcel', active:true, fields:[], driverField:null, repeating:{ entityLabel:'Motorista', entities:['Mauricio / Andrey','Emanuel','Miguel','M30 - Felipe','M21 - Felipe Santos Alvarenga'], entityMeta:{}, fields:[R('premium','Premium'), R('encomendas','Encomendas','total'), R('entregues','Entregues','entregues'), R('incidencias','Incidências'), R('nao_visitados','N. Visitados')] } },
@@ -567,6 +567,29 @@ async function logEdit(action, details){
 // ---------- Escutas em tempo real ----------
 const _recordsListeners = {};
 
+async function migrateGlsRecords(){
+  const op = STATE.operations.find(o=>o.id==='gls');
+  if (!op || !op.repeating) return;
+  const records = STATE.recordsCache['gls'] || {};
+  let changed = false;
+  Object.values(records).forEach(rec=>{
+    if (!rec || !rec.entities) return;
+    Object.values(rec.entities).forEach(ev=>{
+      if (ev && ev.entregas !== undefined){
+        if (ev.stops === undefined || ev.stops === null || ev.stops === ''){
+          ev.stops = ev.entregas;
+        }
+        delete ev.entregas;
+        changed = true;
+      }
+    });
+  });
+  if (changed){
+    await saveRecords('gls', records);
+    await logEdit('Migração automática', 'GLS — campo "Entregas" convertido para "Stops Planeados" (dados preservados)');
+  }
+}
+
 async function migrateDhlExpressRecords(){
   const op = STATE.operations.find(o=>o.id==='dhl_express');
   if (!op || !op.repeating) return;
@@ -597,6 +620,7 @@ function ensureAllOpsHaveRecordsListener(){
       STATE.recordsCache[op.id] = doc.exists ? (doc.data().entries || {}) : {};
       setConnStatus(true);
       if (op.id==='dhl_express') migrateDhlExpressRecords();
+      if (op.id==='gls') migrateGlsRecords();
       if (!isEditingNow()) render();
     }, err=>{
       console.error('listener de registos falhou', op.id, err);
@@ -685,7 +709,7 @@ function sectorYearOptions(){
 // ============================================================
 // AGGREGATION HELPERS
 // ============================================================
-function sumRoleForDate(op, dayRecord, role){
+function sumRoleForDate(op, dayRecord, role, entityFilter){
   if (!dayRecord) return 0;
   let entitySum = 0, hasEntityData = false;
   if (op.repeating){
@@ -693,6 +717,7 @@ function sumRoleForDate(op, dayRecord, role){
     op.repeating.fields.forEach(f=>{
       if (f.role===role){
         Object.keys(entities).forEach(ent=>{
+          if (entityFilter && !entityFilter.has(ent)) return;
           const v = entities[ent] && entities[ent][f.key];
           if (v !== undefined && v !== null && v !== '') { entitySum += Number(v) || 0; hasEntityData = true; }
         });
@@ -700,18 +725,19 @@ function sumRoleForDate(op, dayRecord, role){
     });
   }
   if (hasEntityData) return entitySum;
+  if (entityFilter) return 0; // registo é só por entidade — sem dados dela, não há fallback para "fixed"
   let fixedSum = 0;
   (op.fields||[]).forEach(f=>{
     if (f.role===role) fixedSum += Number(dayRecord.fixed && dayRecord.fixed[f.key]) || 0;
   });
   return fixedSum;
 }
-function dayEntregues(op, rec){ return sumRoleForDate(op, rec, 'entregues'); }
-function dayTotal(op, rec){
-  const t = sumRoleForDate(op, rec, 'total');
+function dayEntregues(op, rec, entityFilter){ return sumRoleForDate(op, rec, 'entregues', entityFilter); }
+function dayTotal(op, rec, entityFilter){
+  const t = sumRoleForDate(op, rec, 'total', entityFilter);
   if (t) return t;
-  const e = sumRoleForDate(op, rec, 'entregues');
-  const n = sumRoleForDate(op, rec, 'nao_entregues');
+  const e = sumRoleForDate(op, rec, 'entregues', entityFilter);
+  const n = sumRoleForDate(op, rec, 'nao_entregues', entityFilter);
   return e+n;
 }
 function dateRangeArray(days){
@@ -1681,23 +1707,23 @@ function renderRegisto(){
 // ============================================================
 // RENDER: ANÁLISES TAB
 // ============================================================
-let analisesSel = { subtab:'mensal', opId:'all', year:2026, month: new Date().getMonth()+1, sectorPeriod:'mes', clientPeriod:'dia', clientYear:2026 };
+let analisesSel = { subtab:'mensal', opId:'all', year:2026, month: new Date().getMonth()+1, sectorPeriod:'mes', clientPeriod:'dia', clientYear:2026, clientLoja:'all', extraMode:'todos', extraMonth: new Date().getMonth()+1, extraYear:2026 };
 let chartInstances = [];
 function destroyCharts(){ chartInstances.forEach(c=>c.destroy()); chartInstances = []; }
 
-function computeOpDayStats(op, dateStr){
+function computeOpDayStats(op, dateStr, entityFilter){
   const records = STATE.recordsCache[op.id] || {};
   const rec = records[dateStr];
   if (!rec || rec.noOperation) return null;
-  const entregues = dayEntregues(op, rec);
-  const total = dayTotal(op, rec);
+  const entregues = dayEntregues(op, rec, entityFilter);
+  const total = dayTotal(op, rec, entityFilter);
   return { entregues, total, edr: total>0? entregues/total : null };
 }
 
-function computeOpRangeStats(op, dates){
+function computeOpRangeStats(op, dates, entityFilter){
   let entregues=0, total=0, diasComRegisto=0;
   dates.forEach(d=>{
-    const s = computeOpDayStats(op, d);
+    const s = computeOpDayStats(op, d, entityFilter);
     if (s){ entregues += s.entregues; total += s.total; diasComRegisto++; }
   });
   return { entregues, total, diasComRegisto, edr: total>0? entregues/total : null, mediaEntregues: diasComRegisto>0? entregues/diasComRegisto : null };
@@ -2174,6 +2200,7 @@ function renderPorCliente(wrap){
   const yearOptions = sectorYearOptions();
   controls.innerHTML = `
     <div class="de-field"><label>Operação</label><select id="an-op-c">${opts}</select></div>
+    <div class="de-field" id="an-client-loja-field"><label>Loja</label><select id="an-client-loja"></select></div>
     <div class="de-field"><label>Período</label><select id="an-client-period">
       <option value="dia">Diário</option>
       <option value="semana">Semanal</option>
@@ -2185,7 +2212,7 @@ function renderPorCliente(wrap){
   wrap.appendChild(controls);
   if (analisesSel.opId==='all') analisesSel.opId = (STATE.operations.find(o=>o.active) || STATE.operations[0]).id;
   controls.querySelector('#an-op-c').value = analisesSel.opId;
-  controls.querySelector('#an-op-c').onchange = (e)=>{ analisesSel.opId = e.target.value; render(); };
+  controls.querySelector('#an-op-c').onchange = (e)=>{ analisesSel.opId = e.target.value; analisesSel.clientLoja = 'all'; render(); };
   controls.querySelector('#an-client-period').value = analisesSel.clientPeriod;
   controls.querySelector('#an-client-year').value = analisesSel.clientYear;
   controls.querySelector('#an-client-year-field').style.display = analisesSel.clientPeriod==='mes' ? '' : 'none';
@@ -2194,6 +2221,26 @@ function renderPorCliente(wrap){
 
   const op = STATE.operations.find(o=>o.id===analisesSel.opId);
   if (!op){ wrap.innerHTML += `<div class="de-empty">Sem operação selecionada.</div>`; return; }
+
+  // Lojas — permite analisar cada loja de operações com vários pontos (ex.:
+  // JustSushi Évora / Coimbra, Domino's Exposul / Carcavelos) em separado.
+  const lojas = op.repeating ? [...new Set(Object.values(op.repeating.entityMeta||{}).map(m=>m&&m.loja).filter(Boolean))].sort() : [];
+  const lojaField = controls.querySelector('#an-client-loja-field');
+  if (lojas.length){
+    lojaField.style.display = '';
+    const lojaSelect = controls.querySelector('#an-client-loja');
+    lojaSelect.innerHTML = `<option value="all">Todas as lojas</option>${lojas.map(l=>`<option value="${l}">${l}</option>`).join('')}`;
+    if (!analisesSel.clientLoja || (analisesSel.clientLoja!=='all' && !lojas.includes(analisesSel.clientLoja))) analisesSel.clientLoja = 'all';
+    lojaSelect.value = analisesSel.clientLoja;
+    lojaSelect.onchange = (e)=>{ analisesSel.clientLoja = e.target.value; render(); };
+  } else {
+    lojaField.style.display = 'none';
+    analisesSel.clientLoja = 'all';
+  }
+  const entityFilter = (op.repeating && analisesSel.clientLoja!=='all')
+    ? new Set(op.repeating.entities.filter(ent=>((op.repeating.entityMeta||{})[ent]||{}).loja===analisesSel.clientLoja))
+    : null;
+  const displayName = entityFilter ? `${op.name} — ${analisesSel.clientLoja}` : op.name;
 
   const records = STATE.recordsCache[op.id] || {};
   const allDates = Object.keys(records).sort();
@@ -2223,7 +2270,7 @@ function renderPorCliente(wrap){
   const wdStats = {};
   ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'].forEach(w=>wdStats[w]={ent:0,total:0,days:0});
   periodDates.forEach(d=>{
-    const s = computeOpDayStats(op, d);
+    const s = computeOpDayStats(op, d, entityFilter);
     if (!s) return;
     const w = weekdayName(d);
     wdStats[w].ent += s.entregues; wdStats[w].total += s.total; wdStats[w].days++;
@@ -2239,12 +2286,12 @@ function renderPorCliente(wrap){
   const curMonth = Number(allDates[allDates.length-1].slice(5,7));
   const curDates = allDates.filter(d=>Number(d.slice(5,7))===curMonth);
   const prevDates = allDates.filter(d=>Number(d.slice(5,7))===curMonth-1);
-  const curStats = computeOpRangeStats(op, curDates);
-  const prevStats = computeOpRangeStats(op, prevDates);
+  const curStats = computeOpRangeStats(op, curDates, entityFilter);
+  const prevStats = computeOpRangeStats(op, prevDates, entityFilter);
   let momChange = null;
   if (prevStats.entregues>0) momChange = (curStats.entregues-prevStats.entregues)/prevStats.entregues;
 
-  const overallStats = computeOpRangeStats(op, allDates);
+  const overallStats = computeOpRangeStats(op, allDates, entityFilter);
 
   const kpis = document.createElement('div');
   kpis.className = 'de-kpis';
@@ -2259,7 +2306,7 @@ function renderPorCliente(wrap){
 
   const trendWrap = document.createElement('div');
   trendWrap.className = 'de-chart-wrap';
-  trendWrap.innerHTML = `<h3 style="margin:0 0 12px 0;font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--blue);font-weight:700;">${op.name} — ${periodLabel}</h3><canvas id="an-client-trend" height="90"></canvas>`;
+  trendWrap.innerHTML = `<h3 style="margin:0 0 12px 0;font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--blue);font-weight:700;">${displayName} — ${periodLabel}</h3><canvas id="an-client-trend" height="90"></canvas>`;
   wrap.appendChild(trendWrap);
 
   if (op.repeating){
@@ -2268,6 +2315,7 @@ function renderPorCliente(wrap){
       const rec = records[d];
       if (!rec || !rec.entities) return;
       Object.entries(rec.entities).forEach(([ent,vals])=>{
+        if (entityFilter && !entityFilter.has(ent)) return;
         entTotals[ent] = entTotals[ent] || {entregues:0,total:0};
         op.repeating.fields.forEach(f=>{
           const v = Number(vals[f.key])||0;
@@ -2278,7 +2326,7 @@ function renderPorCliente(wrap){
     });
     const rankWrap = document.createElement('div');
     rankWrap.className = 'de-card';
-    rankWrap.innerHTML = `<h3>Ranking histórico por ${op.repeating.entityLabel.toLowerCase()}</h3>`;
+    rankWrap.innerHTML = `<h3>Ranking histórico por ${op.repeating.entityLabel.toLowerCase()}${entityFilter?' — '+analisesSel.clientLoja:''}</h3>`;
     const table = document.createElement('table');
     table.className = 'de-table';
     const sorted = Object.entries(entTotals).sort((a,b)=>b[1].entregues-a[1].entregues);
@@ -2298,19 +2346,38 @@ function renderPorCliente(wrap){
   if (extraFieldDefs.length){
     const extraWrap = document.createElement('div');
     extraWrap.className = 'de-card';
-    extraWrap.innerHTML = `<h3>📋 Outros números registados (${periodLabel})</h3>`;
+    if (!analisesSel.extraMode) analisesSel.extraMode = 'todos';
+    if (!analisesSel.extraMonth) analisesSel.extraMonth = Number(todayISO().slice(5,7));
+    if (!analisesSel.extraYear) analisesSel.extraYear = Number(todayISO().slice(0,4));
+    const extraDates = analisesSel.extraMode==='mes'
+      ? allDates.filter(d=>d.slice(0,7)===analisesSel.extraYear+'-'+String(analisesSel.extraMonth).padStart(2,'0'))
+      : allDates;
+    const extraPeriodLabel = analisesSel.extraMode==='mes' ? monthName(analisesSel.extraMonth)+'/'+analisesSel.extraYear : 'todos os anos';
+    extraWrap.innerHTML = `
+      <div class="de-flex-between" style="margin-bottom:10px;">
+        <h3 style="margin-bottom:0;">📋 Outros números registados (${extraPeriodLabel})</h3>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <select id="an-extra-mode" style="background:var(--navy);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-size:12px;">
+            <option value="todos">Todos os anos</option>
+            <option value="mes">Mês específico</option>
+          </select>
+          <select id="an-extra-month" style="background:var(--navy);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-size:12px;display:${analisesSel.extraMode==='mes'?'':'none'};">${[1,2,3,4,5,6,7,8,9,10,11,12].map(m=>`<option value="${m}" ${m===analisesSel.extraMonth?'selected':''}>${monthName(m)}</option>`).join('')}</select>
+          <select id="an-extra-year" style="background:var(--navy);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-size:12px;display:${analisesSel.extraMode==='mes'?'':'none'};">${sectorYearOptions().map(y=>`<option value="${y}" ${y===analisesSel.extraYear?'selected':''}>${y}</option>`).join('')}</select>
+        </div>
+      </div>
+    `;
     const table = document.createElement('table');
     table.className = 'de-table';
     const rows = extraFieldDefs.map(fd=>{
       let total = 0, dias = 0;
-      periodDates.forEach(d=>{
+      extraDates.forEach(d=>{
         const rec = records[d];
         if (!rec) return;
         let v = 0, has = false;
         if (fd.scope==='fixed'){
           if (rec.fixed && rec.fixed[fd.key]!==undefined){ v = Number(rec.fixed[fd.key])||0; has = true; }
         } else {
-          Object.values(rec.entities||{}).forEach(ev=>{ if (ev && ev[fd.key]!==undefined){ v += Number(ev[fd.key])||0; has = true; } });
+          Object.entries(rec.entities||{}).forEach(([ent,ev])=>{ if (entityFilter && !entityFilter.has(ent)) return; if (ev && ev[fd.key]!==undefined){ v += Number(ev[fd.key])||0; has = true; } });
         }
         if (has){ total += v; dias++; }
       });
@@ -2320,12 +2387,16 @@ function renderPorCliente(wrap){
     table.innerHTML = `<thead><tr><th>Campo</th><th>Total (período)</th><th>Média/dia</th><th>Dias com dados</th></tr></thead><tbody>${rows}</tbody>`;
     extraWrap.appendChild(table);
     wrap.appendChild(extraWrap);
+    extraWrap.querySelector('#an-extra-mode').value = analisesSel.extraMode;
+    extraWrap.querySelector('#an-extra-mode').onchange = (e)=>{ analisesSel.extraMode = e.target.value; render(); };
+    extraWrap.querySelector('#an-extra-month').onchange = (e)=>{ analisesSel.extraMonth = Number(e.target.value); render(); };
+    extraWrap.querySelector('#an-extra-year').onchange = (e)=>{ analisesSel.extraYear = Number(e.target.value); render(); };
   }
 
   destroyCharts();
   const chartLabels = groups.map(g=>g.label);
-  const chartEnt = groups.map(g=>{ let s=0; g.dates.forEach(d=>s+=dayEntregues(op,records[d])); return s; });
-  const chartEdr = groups.map(g=>{ let e=0,t=0; g.dates.forEach(d=>{ e+=dayEntregues(op,records[d]); t+=dayTotal(op,records[d]); }); return t>0 ? e/t*100 : null; });
+  const chartEnt = groups.map(g=>{ let s=0; g.dates.forEach(d=>s+=dayEntregues(op,records[d],entityFilter)); return s; });
+  const chartEdr = groups.map(g=>{ let e=0,t=0; g.dates.forEach(d=>{ e+=dayEntregues(op,records[d],entityFilter); t+=dayTotal(op,records[d],entityFilter); }); return t>0 ? e/t*100 : null; });
   safeChart('an-client-trend', {
     data: {
       labels: chartLabels,
@@ -3103,11 +3174,21 @@ function migrateOperations(ops){
         }
       });
     }
-    // GLS: sincroniza o rótulo do campo "Entregas" -> "Entregas planeadas"
-    // (o EDR já usa só este campo (total) + Entregues, não precisa de mais nada).
+    // GLS: mesmo problema do DHL Express — o campo antigo (antes "Entregas",
+    // depois renomeado só no rótulo para "Entregas planeadas") ficava com
+    // papel "total" e podia coexistir com outro campo de papel "total",
+    // fazendo o EDR somar os dois. Unifica tudo em "stops" (Stops Planeados),
+    // que é o único campo de papel total daqui pra frente.
     if (op.id === 'gls' && op.repeating){
-      const f = op.repeating.fields.find(x=>x.key==='entregas');
-      if (f) f.label = 'Entregas planeadas';
+      op.repeating.fields = op.repeating.fields.filter(f=>f.key!=='entregas');
+      const totalFields = op.repeating.fields.filter(f=>f.role==='total');
+      if (totalFields.length > 1){
+        // mantém só o primeiro campo de papel "total", os outros perdem o papel
+        totalFields.slice(1).forEach(f=>{ f.role = null; });
+      }
+      if (!op.repeating.fields.some(f=>f.key==='stops')){
+        op.repeating.fields.unshift({ key:'stops', label:'Stops Planeados', role:'total' });
+      }
     }
     // Correção DHL Express: remove o campo legado "Entregas" (que ficava
     // duplicado com "Stops Planeados" e inflacionava o total usado no EDR).
