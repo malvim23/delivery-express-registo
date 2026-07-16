@@ -567,12 +567,36 @@ async function logEdit(action, details){
 // ---------- Escutas em tempo real ----------
 const _recordsListeners = {};
 
+async function migrateDhlExpressRecords(){
+  const op = STATE.operations.find(o=>o.id==='dhl_express');
+  if (!op || !op.repeating) return;
+  const records = STATE.recordsCache['dhl_express'] || {};
+  let changed = false;
+  Object.values(records).forEach(rec=>{
+    if (!rec || !rec.entities) return;
+    Object.values(rec.entities).forEach(ev=>{
+      if (ev && ev.entregas !== undefined){
+        if (ev.stops === undefined || ev.stops === null || ev.stops === ''){
+          ev.stops = ev.entregas;
+        }
+        delete ev.entregas;
+        changed = true;
+      }
+    });
+  });
+  if (changed){
+    await saveRecords('dhl_express', records);
+    await logEdit('Migração automática', 'DHL Express — campo "Entregas" convertido para "Stops Planeados" (dados preservados)');
+  }
+}
+
 function ensureAllOpsHaveRecordsListener(){
   STATE.operations.forEach(op=>{
     if (_recordsListeners[op.id]) return;
     _recordsListeners[op.id] = db.collection('records').doc(op.id).onSnapshot(doc=>{
       STATE.recordsCache[op.id] = doc.exists ? (doc.data().entries || {}) : {};
       setConnStatus(true);
+      if (op.id==='dhl_express') migrateDhlExpressRecords();
       if (!isEditingNow()) render();
     }, err=>{
       console.error('listener de registos falhou', op.id, err);
@@ -714,6 +738,31 @@ function allDatesForMonth(year, month){
 function weekdayName(dateStr){
   const d = new Date(dateStr+'T00:00:00');
   return ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'][d.getDay()];
+}
+function addDays(dateStr, delta){
+  const d = new Date(dateStr+'T00:00:00');
+  d.setDate(d.getDate()+delta);
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function weekStartDate(dateStr){
+  const d = new Date(dateStr+'T00:00:00');
+  const dow = (d.getDay()+6)%7; // dias desde segunda-feira
+  d.setDate(d.getDate()-dow);
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function groupDatesBy(dates, groupBy){
+  // devolve [{ key, label, dates:[...] }] ordenado cronologicamente
+  const map = {};
+  dates.forEach(d=>{
+    let key, label;
+    if (groupBy==='week'){ key = weekStartDate(d); label = key.slice(8)+'/'+key.slice(5,7); }
+    else if (groupBy==='month'){ key = d.slice(0,7); label = monthName(Number(d.slice(5,7))).slice(0,3)+'/'+d.slice(2,4); }
+    else if (groupBy==='year'){ key = d.slice(0,4); label = key; }
+    else { key = d; label = d.slice(5); }
+    if (!map[key]) map[key] = { key, label, dates: [] };
+    map[key].dates.push(d);
+  });
+  return Object.values(map).sort((a,b)=>a.key.localeCompare(b.key));
 }
 
 // Um motorista/entidade "desativado a partir de" uma data continua a
@@ -1160,6 +1209,42 @@ function renderRegisto(){
     }
     wrap.appendChild(card);
 
+    // Lista de desativados sempre visível, independente da data selecionada no
+    // Registo — corrige o caso de não conseguir reativar quem está inativo há
+    // meses (antes só aparecia se a data escolhida caísse no período ativo).
+    const inactiveEntities = op.repeating.entities.filter(ent=>{
+      const m = (op.repeating.entityMeta||{})[ent];
+      return m && m.inactiveFrom;
+    });
+    if (inactiveEntities.length){
+      const inactiveCard = document.createElement('div');
+      inactiveCard.className = 'de-card';
+      inactiveCard.innerHTML = `<h3>🚫 ${op.repeating.entityLabel}s desativados</h3>`;
+      const list = document.createElement('div');
+      list.style.cssText = 'display:flex;flex-direction:column;gap:8px;';
+      inactiveEntities.forEach(ent=>{
+        const meta = op.repeating.entityMeta[ent];
+        const row = document.createElement('div');
+        row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 12px;background:var(--navy);border:1px solid var(--border);border-radius:8px;';
+        row.innerHTML = `<span>${ent} <span class="de-badge inactive" style="margin-left:4px;">desativado desde ${meta.inactiveFrom.split('-').reverse().join('/')}</span></span>
+          <button class="de-btn ghost small" data-reactivate-entity="${ent}">↺ Reativar</button>`;
+        list.appendChild(row);
+      });
+      inactiveCard.appendChild(list);
+      wrap.appendChild(inactiveCard);
+      inactiveCard.querySelectorAll('[data-reactivate-entity]').forEach(btn=>{
+        btn.onclick = async ()=>{
+          const name = btn.dataset.reactivateEntity;
+          if (!confirm(`Reativar "${name}" em ${op.name}? Volta a aparecer no Registo a partir de hoje.`)) return;
+          delete op.repeating.entityMeta[name].inactiveFrom;
+          await saveOperations(STATE.operations);
+          await logEdit('Reativou '+op.repeating.entityLabel.toLowerCase(), op.name + ' — ' + name);
+          toast(`${name} reativado`);
+          render();
+        };
+      });
+    }
+
     card.querySelector('#quick-add-entity-btn').onclick = async ()=>{
       const val = card.querySelector('#quick-add-entity').value.trim();
       if (!val) return;
@@ -1489,7 +1574,7 @@ function renderRegisto(){
 // ============================================================
 // RENDER: ANÁLISES TAB
 // ============================================================
-let analisesSel = { subtab:'mensal', opId:'all', year:2026, month: new Date().getMonth()+1, sectorPeriod:'mes' };
+let analisesSel = { subtab:'mensal', opId:'all', year:2026, month: new Date().getMonth()+1, sectorPeriod:'mes', clientPeriod:'dia', clientYear:2026 };
 let chartInstances = [];
 function destroyCharts(){ chartInstances.forEach(c=>c.destroy()); chartInstances = []; }
 
@@ -1906,7 +1991,7 @@ function renderPorSetor(wrap){
 
   const chartWrap = document.createElement('div');
   chartWrap.className = 'de-chart-wrap';
-  chartWrap.innerHTML = `<h3 style="margin:0 0 12px 0;font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--blue);font-weight:700;">Entregues por setor — ${periodLabel}</h3><canvas id="an-sector-chart" height="90"></canvas>`;
+  chartWrap.innerHTML = `<h3 style="margin:0 0 12px 0;font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--blue);font-weight:700;">Entregues &amp; EDR% por setor — ${periodLabel}</h3><canvas id="an-sector-chart" height="90"></canvas>`;
   wrap.appendChild(chartWrap);
 
   const tableWrap = document.createElement('div');
@@ -1923,20 +2008,20 @@ function renderPorSetor(wrap){
 
   destroyCharts();
   safeChart('an-sector-chart', {
-    type:'bar',
     data:{
       labels: sectorList.map(s=>s.name),
       datasets:[
-        { label:'Entregues', data: sectorList.map(s=>s.entregues), backgroundColor:chartBlue(), borderRadius:4 }
+        { type:'bar', label:'Entregues', data: sectorList.map(s=>s.entregues), backgroundColor:chartBlue(), borderRadius:4, yAxisID:'y' },
+        { type:'line', label:'EDR%', data: sectorList.map(s=>s.edr!==null?s.edr*100:null), borderColor:chartGreen(), backgroundColor:chartGreen(), tension:0.3, yAxisID:'y1', pointRadius:4, labelSuffix:'%' }
       ]
     },
     options:{
-      indexAxis:'y',
       responsive:true,
-      plugins:{ legend:{display:false} },
+      plugins:{ legend:{ labels:{ color:chartLegend() } } },
       scales:{
-        x:{ ticks:{color:chartAxis()}, grid:{color:chartGrid()}, beginAtZero:true },
-        y:{ ticks:{color:chartLegend()}, grid:{display:false} }
+        x:{ ticks:{ color:chartAxis() }, grid:{ color:chartGrid() } },
+        y:{ ticks:{ color:chartAxis() }, grid:{ color:chartGrid() }, beginAtZero:true, position:'left' },
+        y1:{ ticks:{ color:chartGreen(), callback:v=>v+'%' }, grid:{ display:false }, position:'right', min:0, max:100 }
       }
     }
   });
@@ -1947,11 +2032,26 @@ function renderPorCliente(wrap){
   const controls = document.createElement('div');
   controls.className = 'de-row';
   const opts = opDropdownOptions();
-  controls.innerHTML = `<div class="de-field"><label>Operação</label><select id="an-op-c">${opts}</select></div>`;
+  const yearOptions = sectorYearOptions();
+  controls.innerHTML = `
+    <div class="de-field"><label>Operação</label><select id="an-op-c">${opts}</select></div>
+    <div class="de-field"><label>Período</label><select id="an-client-period">
+      <option value="dia">Diário</option>
+      <option value="semana">Semanal</option>
+      <option value="mes">Mensal</option>
+      <option value="ano">Anual</option>
+    </select></div>
+    <div class="de-field" id="an-client-year-field"><label>Ano</label><select id="an-client-year">${yearOptions.map(y=>`<option value="${y}">${y}</option>`).join('')}</select></div>
+  `;
   wrap.appendChild(controls);
   if (analisesSel.opId==='all') analisesSel.opId = (STATE.operations.find(o=>o.active) || STATE.operations[0]).id;
   controls.querySelector('#an-op-c').value = analisesSel.opId;
   controls.querySelector('#an-op-c').onchange = (e)=>{ analisesSel.opId = e.target.value; render(); };
+  controls.querySelector('#an-client-period').value = analisesSel.clientPeriod;
+  controls.querySelector('#an-client-year').value = analisesSel.clientYear;
+  controls.querySelector('#an-client-year-field').style.display = analisesSel.clientPeriod==='mes' ? '' : 'none';
+  controls.querySelector('#an-client-period').onchange = (e)=>{ analisesSel.clientPeriod = e.target.value; render(); };
+  controls.querySelector('#an-client-year').onchange = (e)=>{ analisesSel.clientYear = Number(e.target.value); render(); };
 
   const op = STATE.operations.find(o=>o.id===analisesSel.opId);
   if (!op){ wrap.innerHTML += `<div class="de-empty">Sem operação selecionada.</div>`; return; }
@@ -1962,11 +2062,28 @@ function renderPorCliente(wrap){
     wrap.innerHTML += `<div class="de-empty"><div class="big">📊</div>Ainda sem dados registados para ${op.name}.</div>`;
     return;
   }
-  const last90 = allDates.slice(-90);
+
+  // Datas e agrupamento do gráfico de acordo com o período escolhido
+  const period = analisesSel.clientPeriod;
+  let periodDates, groupBy, periodLabel;
+  if (period==='semana'){
+    periodDates = allDates.filter(d=>d>=addDays(todayISO(),-182));
+    groupBy = 'week'; periodLabel = 'últimas ' + groupDatesBy(periodDates,'week').length + ' semanas';
+  } else if (period==='mes'){
+    periodDates = allDates.filter(d=>d.startsWith(String(analisesSel.clientYear)));
+    groupBy = 'month'; periodLabel = 'ano ' + analisesSel.clientYear;
+  } else if (period==='ano'){
+    periodDates = allDates;
+    groupBy = 'year'; periodLabel = 'todos os anos';
+  } else {
+    periodDates = allDates.slice(-90);
+    groupBy = 'day'; periodLabel = 'últimos ' + periodDates.length + ' dias com registo';
+  }
+  const groups = groupDatesBy(periodDates, groupBy);
 
   const wdStats = {};
   ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'].forEach(w=>wdStats[w]={ent:0,total:0,days:0});
-  last90.forEach(d=>{
+  periodDates.forEach(d=>{
     const s = computeOpDayStats(op, d);
     if (!s) return;
     const w = weekdayName(d);
@@ -2003,7 +2120,7 @@ function renderPorCliente(wrap){
 
   const trendWrap = document.createElement('div');
   trendWrap.className = 'de-chart-wrap';
-  trendWrap.innerHTML = `<h3 style="margin:0 0 12px 0;font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--blue);font-weight:700;">${op.name} — últimos ${last90.length} dias com registo</h3><canvas id="an-client-trend" height="90"></canvas>`;
+  trendWrap.innerHTML = `<h3 style="margin:0 0 12px 0;font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--blue);font-weight:700;">${op.name} — ${periodLabel}</h3><canvas id="an-client-trend" height="90"></canvas>`;
   wrap.appendChild(trendWrap);
 
   if (op.repeating){
@@ -2042,12 +2159,12 @@ function renderPorCliente(wrap){
   if (extraFieldDefs.length){
     const extraWrap = document.createElement('div');
     extraWrap.className = 'de-card';
-    extraWrap.innerHTML = `<h3>📋 Outros números registados</h3>`;
+    extraWrap.innerHTML = `<h3>📋 Outros números registados (${periodLabel})</h3>`;
     const table = document.createElement('table');
     table.className = 'de-table';
     const rows = extraFieldDefs.map(fd=>{
       let total = 0, dias = 0;
-      last90.forEach(d=>{
+      periodDates.forEach(d=>{
         const rec = records[d];
         if (!rec) return;
         let v = 0, has = false;
@@ -2067,12 +2184,15 @@ function renderPorCliente(wrap){
   }
 
   destroyCharts();
+  const chartLabels = groups.map(g=>g.label);
+  const chartEnt = groups.map(g=>{ let s=0; g.dates.forEach(d=>s+=dayEntregues(op,records[d])); return s; });
+  const chartEdr = groups.map(g=>{ let e=0,t=0; g.dates.forEach(d=>{ e+=dayEntregues(op,records[d]); t+=dayTotal(op,records[d]); }); return t>0 ? e/t*100 : null; });
   safeChart('an-client-trend', {
     data: {
-      labels: last90.map(d=>d.slice(5)),
+      labels: chartLabels,
       datasets: [
-        { type:'bar', label:'Entregues', data: last90.map(d=>dayEntregues(op, records[d])), backgroundColor:chartBlue(), yAxisID:'y', hideLabels: last90.length>31 },
-        { type:'line', label:'EDR%', data: last90.map(d=>{ const t=dayTotal(op,records[d]); return t>0? (dayEntregues(op,records[d])/t*100) : null; }), borderColor:chartGreen(), yAxisID:'y1', pointRadius:1, tension:0.3, labelSuffix:'%', hideLabels:true }
+        { type:'bar', label:'Entregues', data: chartEnt, backgroundColor:chartBlue(), yAxisID:'y', hideLabels: chartLabels.length>31 },
+        { type:'line', label:'EDR%', data: chartEdr, borderColor:chartGreen(), yAxisID:'y1', pointRadius: groupBy==='day'?1:3, tension:0.3, labelSuffix:'%', hideLabels: groupBy==='day' }
       ]
     },
     options:{
@@ -2764,6 +2884,16 @@ function migrateOperations(ops){
           op.repeating.fields.push({...defField});
         }
       });
+    }
+    // Correção DHL Express: remove o campo legado "Entregas" (que ficava
+    // duplicado com "Stops Planeados" e inflacionava o total usado no EDR).
+    // Os dados antigos guardados sob a chave 'entregas' são preservados —
+    // ver migrateDhlExpressRecords(), que copia esses valores para 'stops'.
+    if (op.id === 'dhl_express' && op.repeating){
+      op.repeating.fields = op.repeating.fields.filter(f=>f.key!=='entregas');
+      if (!op.repeating.fields.some(f=>f.key==='stops')){
+        op.repeating.fields.unshift({ key:'stops', label:'Stops Planeados', role:'total' });
+      }
     }
     if (op.repeating){
       const rolesTracked = new Set(op.repeating.fields.filter(f=>f.role).map(f=>f.role));
