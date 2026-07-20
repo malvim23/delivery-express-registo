@@ -1901,6 +1901,14 @@ function computeMissingDaysForMonth(op, year, month){
     if (op.repeating && op.repeating.entities.length){
       const absences = (rec && rec.absences) || {};
       const entities = (rec && rec.entities) || {};
+      // Dia coberto por uma importação (Excel/histórico) — os dados ficaram
+      // guardados numa entidade que não é nenhum dos motoristas/regiões
+      // cadastrados hoje (ex.: "Histórico (importado, sem motorista)"). Nesse
+      // caso o dia já tem números reais, então os nomes cadastrados contam
+      // como cobertos (zerados) e não disparam alerta — vale tanto para
+      // importações novas como para as que já foram feitas.
+      const hasImportedData = Object.keys(entities).some(k=>!op.repeating.entities.includes(k) && Object.keys(entities[k]||{}).length);
+      if (hasImportedData) return;
       const incomplete = op.repeating.entities.some(ent=>{
         if (!isEntityActiveForDate(op, ent, d)) return false;
         if (absences[ent]) return false;
