@@ -332,6 +332,7 @@
     <div class="de-header-right">
       <div class="de-live-clock" id="de-live-clock"></div>
       <div class="de-conn-status" id="de-conn-status">🔴 A ligar…</div>
+      <button class="de-theme-toggle" id="de-user-name-btn" title="Alterar o teu nome de utilizador">👤</button>
       <button class="de-theme-toggle" id="de-theme-toggle" title="Alternar modo claro/escuro">🌙</button>
     </div>
   </div>
@@ -2174,7 +2175,7 @@ function renderMensal(wrap){
 
   const trendWrap = document.createElement('div');
   trendWrap.className = 'de-chart-wrap';
-  trendWrap.innerHTML = `<h3 style="margin:0 0 12px 0;font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--blue);font-weight:700;">Entregues por dia — ${monthName(analisesSel.month)}</h3><canvas id="an-trend" height="90"></canvas>`;
+  trendWrap.innerHTML = `<h3 style="margin:0 0 12px 0;font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--blue);font-weight:700;">Entregues &amp; EDR% por dia — ${monthName(analisesSel.month)}</h3><canvas id="an-trend" height="90"></canvas>`;
   wrap.appendChild(trendWrap);
 
   if (analisesSel.opId==='all'){
@@ -2194,12 +2195,16 @@ function renderMensal(wrap){
 
   destroyCharts();
   safeChart('an-trend', {
-    type:'bar',
     data:{ labels: perDay.map(d=>d.date.slice(8)), datasets:[
-      { label:'Entregues', data: perDay.map(d=>d.hasData?d.ent:null), backgroundColor:chartBlue(), borderRadius:4 }
+      { type:'bar', label:'Entregues', data: perDay.map(d=>d.hasData?d.ent:null), backgroundColor:chartBlue(), borderRadius:4, yAxisID:'y' },
+      { type:'line', label:'EDR%', data: perDay.map(d=>d.hasData && d.total>0 ? (d.ent/d.total*100) : null), borderColor:chartGreen(), backgroundColor:chartGreen(), tension:0.3, yAxisID:'y1', pointRadius:2, labelSuffix:'%', hideLabels:true }
     ]},
     options:{ responsive:true, plugins:{legend:{labels:{color:chartLegend()}}},
-      scales:{ x:{ticks:{color:chartAxis()},grid:{color:chartGrid()}}, y:{ticks:{color:chartAxis()},grid:{color:chartGrid()},beginAtZero:true} } }
+      scales:{
+        x:{ ticks:{color:chartAxis()},grid:{color:chartGrid()} },
+        y:{ ticks:{color:chartAxis()},grid:{color:chartGrid()},beginAtZero:true, position:'left' },
+        y1:{ ticks:{ color:chartGreen(), callback:v=>v+'%' }, grid:{ display:false }, position:'right', min:0, max:100 }
+      } }
   });
 }
 
@@ -3547,6 +3552,18 @@ async function init(){
       applyTheme(next);
       saveTheme(next);
       render();
+    };
+
+    document.getElementById('de-user-name-btn').onclick = async ()=>{
+      const atual = await getUserName();
+      let novo;
+      try { novo = prompt('Alterar o teu nome de utilizador (usado para identificar as tuas edições no Histórico):', atual); } catch(e){ return; }
+      if (novo===null) return; // cancelado
+      const trimmed = novo.trim();
+      if (!trimmed){ toast('O nome não pode ficar vazio'); return; }
+      currentUserName = trimmed;
+      try { localStorage.setItem('de-user-name', trimmed); } catch(e){}
+      toast(`Nome de utilizador atualizado para "${trimmed}"`);
     };
 
     // Carregamento inicial: uma leitura direta de cada coleção, para a
