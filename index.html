@@ -190,21 +190,29 @@
   table.de-table .ent-loja { color: var(--text-faint); font-size: 11px; font-weight: 400; }
   table.de-table .computed-val { font-family: var(--font-mono); color: var(--green); font-weight: 700; }
 
-  .de-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; margin-bottom: 20px; }
+  .de-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; margin-bottom: 20px; }
   .de-kpi {
     position: relative; overflow: hidden;
     background: linear-gradient(155deg, var(--panel-raised) 0%, var(--panel) 100%);
-    border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px;
+    border: 1px solid var(--border); border-radius: 14px; padding: 18px 20px;
     box-shadow: var(--shadow-md);
-    transition: transform .15s ease, border-color .15s ease;
+    transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease;
   }
-  .de-kpi:hover { transform: translateY(-2px); border-color: var(--blue-dim); }
+  .de-kpi:hover { transform: translateY(-3px); border-color: var(--blue-dim); box-shadow: var(--shadow-lg); }
   .de-kpi::before {
-    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2.5px;
-    background: linear-gradient(90deg, var(--blue), transparent);
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: linear-gradient(90deg, var(--blue), var(--blue-dim) 45%, transparent);
+    opacity: 0.9;
   }
-  .de-kpi .label { font-size: 10.5px; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.06em; font-weight: 700; margin-bottom: 8px; }
-  .de-kpi .value { font-family: var(--font-mono); font-size: 26px; font-weight: 800; color: var(--text); letter-spacing: -0.02em; }
+  .de-kpi .label {
+    font-size: 10.5px; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.07em;
+    font-weight: 700; margin-bottom: 10px; display: flex; align-items: center; gap: 7px; line-height: 1.35;
+  }
+  .de-kpi .label::before {
+    content: ''; width: 5px; height: 5px; border-radius: 50%; flex: none;
+    background: var(--blue); box-shadow: 0 0 0 3px var(--blue-glow);
+  }
+  .de-kpi .value { font-family: var(--font-mono); font-size: 27px; font-weight: 800; color: var(--text); letter-spacing: -0.02em; }
   .de-kpi .value.blue { color: var(--blue); }
   .de-kpi .value.green { color: var(--green); }
   .de-kpi .value.red { color: var(--red); }
@@ -466,6 +474,52 @@ const valueLabelsPlugin = {
   }
 };
 
+// Separa visualmente as barras (Entregues) da linha (EDR%) para que nunca se
+// cruzem: as barras ficam confinadas à faixa inferior (~58% da altura) e a
+// linha do EDR% fica sempre numa faixa própria no topo. Faz isto ajustando os
+// limites dos dois eixos (y = barras à esquerda, y1 = linha % à direita).
+function applyBandedDualAxis(config){
+  try {
+    const ds = (config.data && config.data.datasets) || [];
+    const hasLine = ds.some(d => d.type === 'line' && (d.yAxisID === 'y1' || d.yAxisID === undefined));
+    const scales = config.options && config.options.scales;
+    if (!scales || !scales.y || !scales.y1 || !hasLine) return;
+
+    // Maior valor das barras (dataset de barras / eixo y)
+    let maxBar = 0;
+    ds.forEach(d => {
+      if (d.type === 'bar'){
+        d.data.forEach(v => { if (typeof v === 'number' && isFinite(v) && v > maxBar) maxBar = v; });
+      }
+    });
+
+    // As barras enchem no máximo ~58% da altura -> topo do eixo com folga.
+    const BAR_FILL = 0.58;
+    if (maxBar > 0){
+      let target = maxBar / BAR_FILL;
+      // Arredonda para um valor "bonito" para os ticks ficarem legíveis.
+      const mag = Math.pow(10, Math.floor(Math.log10(target)));
+      target = Math.ceil(target / mag) * mag;
+      scales.y.max = target;
+    }
+    scales.y.beginAtZero = true;
+
+    // Eixo da linha (%): 100% no topo, 0% mapeado para ~62% da altura, com o
+    // resto (faixa inferior) reservado às barras. Assim a linha vive sempre
+    // acima das barras.
+    scales.y1.min = -163;
+    scales.y1.max = 100;
+    const prevCb = (scales.y1.ticks && scales.y1.ticks.callback);
+    scales.y1.ticks = scales.y1.ticks || {};
+    // Esconde os ticks da zona negativa (que só existe para "empurrar" a linha).
+    scales.y1.ticks.callback = function(v){
+      if (v < 0) return '';
+      return prevCb ? prevCb.call(this, v) : v + '%';
+    };
+    scales.y1.ticks.stepSize = scales.y1.ticks.stepSize || 25;
+  } catch(e){ /* nunca bloquear o gráfico por causa disto */ }
+}
+
 // Safe chart creation: never let a missing/slow Chart.js library block the app.
 // Retries briefly, then falls back to a plain message instead of hanging.
 function safeChart(canvasId, config, retriesLeft){
@@ -490,6 +544,7 @@ function safeChart(canvasId, config, retriesLeft){
     }
     config.options = config.options || {};
     config.options.layout = config.options.layout || { padding: { top: 18 } };
+    applyBandedDualAxis(config);
     const chart = new Chart(canvas.getContext('2d'), config);
     chartInstances.push(chart);
     return chart;
@@ -794,6 +849,19 @@ function sectorYearOptions(){
   const currentYear = new Date().getFullYear();
   const years = new Set([2026, currentYear, currentYear+1]);
   return Array.from(years).sort();
+}
+// Plural em português (regras principais) — evita erros como "Regiãos".
+function plural(word){
+  if (!word) return word;
+  const w = String(word);
+  const lower = w.toLowerCase();
+  if (/ão$/.test(lower)) return w.slice(0,-2) + 'ões';        // região -> regiões
+  if (/(m)$/.test(lower)) return w.slice(0,-1) + 'ns';         // armazém -> armazéns
+  if (/(r|z|n)$/.test(lower)) return w + 'es';                 // setor -> setores
+  if (/(al|el|ol|ul)$/.test(lower)) return w.slice(0,-1) + 'is'; // local -> locais
+  if (/il$/.test(lower)) return w.slice(0,-2) + 'is';          // funil -> funis
+  if (/s$/.test(lower)) return w;                              // já plural / invariável
+  return w + 's';                                              // loja -> lojas
 }
 
 // ============================================================
@@ -1138,7 +1206,7 @@ function renderRegisto(){
       : (smRec ? (smRec.fixed||{}) : {});
     sumCard.innerHTML = `
       <div class="de-flex-between" style="margin-bottom:${registoMonthlyOpen?'12px':'0'};">
-        <h3 style="margin-bottom:0;">🗓️ Total do mês (sem detalhar por dia)</h3>
+        <h3 style="margin-bottom:0;">Total do mês (sem detalhar por dia)</h3>
         <button class="de-btn ghost small" id="reg-toggle-monthly">${registoMonthlyOpen?'▲ Ocultar':'▼ Preencher / ver total do mês'}</button>
       </div>
       ${registoMonthlyOpen ? `
@@ -1230,7 +1298,7 @@ function renderRegisto(){
           });
           await saveRecords(op.id, recs);
           await logEdit('Importou Excel (totais mensais)', op.name + ' — ' + summaryText);
-          statusDiv.innerHTML = `✅ ${parsed.length} mês(es) importado(s) com sucesso.` + (errors.length ? `<br>⚠️ ${errors.length} linha(s) ignorada(s): ${errors.join('; ')}` : '');
+          statusDiv.innerHTML = `<span style="color:var(--green);font-weight:700;">✓</span> ${parsed.length} mês(es) importado(s) com sucesso.` + (errors.length ? `<br><span style="color:var(--amber,#f59e0b);font-weight:700;">!</span> ${errors.length} linha(s) ignorada(s): ${errors.join('; ')}` : '');
           toast('Excel importado');
           render();
         } catch(err){
@@ -1351,7 +1419,7 @@ function renderRegisto(){
   if (op.driverField && op.driverField.enabled){
     const card = document.createElement('div');
     card.className = 'de-card';
-    card.innerHTML = `<h3>🧑‍✈️ Motorista responsável</h3>`;
+    card.innerHTML = `<h3>Motorista responsável</h3>`;
     const dRow = document.createElement('div');
     dRow.className = 'de-row';
     dRow.style.marginBottom = '0';
@@ -1401,7 +1469,7 @@ function renderRegisto(){
   if ((op.fields && op.fields.length) || !op.repeating){
     const card = document.createElement('div');
     card.className = 'de-card';
-    card.innerHTML = `<h3>📦 Números do dia</h3>`;
+    card.innerHTML = `<h3>Números do dia</h3>`;
     const grid = document.createElement('div');
     grid.className = 'de-grid-fields';
     editableFixed.forEach(f=>{
@@ -1469,7 +1537,7 @@ function renderRegisto(){
     const hasLojas = Object.values(op.repeating.entityMeta||{}).some(m=>m && m.loja);
     card.innerHTML = `
       <div class="de-flex-between" style="margin-bottom:0;">
-        <h3 style="margin-bottom:0;">🚚 ${op.repeating.entityLabel==='Motorista' ? 'Por motorista' : 'Por '+op.repeating.entityLabel.toLowerCase()}</h3>
+        <h3 style="margin-bottom:0;">${op.repeating.entityLabel==='Motorista' ? 'Por motorista' : 'Por '+op.repeating.entityLabel.toLowerCase()}</h3>
         <div style="display:flex;gap:6px;flex-wrap:wrap;">
           <input type="text" id="quick-add-entity" placeholder="novo ${op.repeating.entityLabel.toLowerCase()}…" style="background:var(--navy);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-size:12px;" />
           <button class="de-btn ghost small" id="quick-add-entity-btn">+ Adicionar</button>
@@ -1534,7 +1602,7 @@ function renderRegisto(){
       const empty = document.createElement('div');
       empty.className = 'de-note';
       empty.style.marginTop = '10px';
-      empty.textContent = 'Ainda sem ' + op.repeating.entityLabel.toLowerCase() + 's cadastrados — adiciona acima.';
+      empty.textContent = 'Ainda sem ' + plural(op.repeating.entityLabel.toLowerCase()) + ' cadastrados — adiciona acima.';
       card.appendChild(empty);
     }
     wrap.appendChild(card);
@@ -1547,7 +1615,7 @@ function renderRegisto(){
       const inactiveCard = document.createElement('div');
       inactiveCard.className = 'de-card';
       inactiveCard.innerHTML = `<div class="de-flex-between" style="margin-bottom:0;">
-        <h3 style="margin-bottom:0;">🚫 ${op.repeating.entityLabel}s desativados (${inactiveEntities.length})</h3>
+        <h3 style="margin-bottom:0;">${plural(op.repeating.entityLabel)} sem atividade (${inactiveEntities.length})</h3>
         <button class="de-btn ghost small" id="reg-toggle-inactive">${inactiveListOpen?'▲ Minimizar':'▼ Mostrar lista'}</button>
       </div>`;
       if (inactiveListOpen){
@@ -2102,8 +2170,8 @@ function renderHeroOverview(){
       <div class="de-hero-stat"><div class="n">${isCurrentMonth ? (hasToday?fmt(entHoje):'—') : '—'}</div><div class="l">Entregues hoje</div></div>
       <div class="de-hero-stat"><div class="n">${fmt(entPeriodo)}</div><div class="l">Entregues ${heroSel.mode==='year'?'no ano':'no mês'}</div></div>
       <div class="de-hero-stat"><div class="n">${edrPeriodo!==null?edrHtml(edrPeriodo):'—'}</div><div class="l">EDR médio geral</div></div>
-      <div class="de-hero-stat"><div class="n" style="font-size:20px;">${bestSector?bestSector[0]:'—'}</div><div class="l">📈 Setor com mais volume</div></div>
-      <div class="de-hero-stat"><div class="n" style="font-size:20px;">${worstSector?worstSector[0]:'—'}</div><div class="l">📉 Setor com menos volume</div></div>
+      <div class="de-hero-stat"><div class="n" style="font-size:20px;">${bestSector?bestSector[0]:'—'}</div><div class="l">Setor com mais volume</div></div>
+      <div class="de-hero-stat"><div class="n" style="font-size:20px;">${worstSector?worstSector[0]:'—'}</div><div class="l">Setor com menos volume</div></div>
     </div>
   `;
   hero.querySelector('#hero-mode').onchange = (e)=>{ heroSel.mode = e.target.value; render(); };
@@ -2212,11 +2280,11 @@ function renderMensal(wrap){
   const kpis = document.createElement('div');
   kpis.className = 'de-kpis';
   kpis.innerHTML = `
-    <div class="de-kpi"><div class="label">📦 Total entregues (${monthName(analisesSel.month)})</div><div class="value green">${fmt(totalEnt)}</div></div>
-    <div class="de-kpi"><div class="label">📈 Média entregas / dia</div><div class="value blue">${mediaDiaria!==null?fmt(mediaDiaria):'—'}</div></div>
-    <div class="de-kpi"><div class="label">🧾 Média pedidos / dia</div><div class="value">${mediaEncomendasDia!==null?fmt(mediaEncomendasDia):'—'}</div></div>
-    <div class="de-kpi"><div class="label">🎯 EDR médio do mês</div><div class="value">${edrGlobal!==null?edrHtml(edrGlobal):'—'}</div></div>
-    <div class="de-kpi"><div class="label">🗓 Dias com registo</div><div class="value">${diasComDados} / ${dates.length}</div></div>
+    <div class="de-kpi"><div class="label">Total entregues (${monthName(analisesSel.month)})</div><div class="value green">${fmt(totalEnt)}</div></div>
+    <div class="de-kpi"><div class="label">Média entregas / dia</div><div class="value blue">${mediaDiaria!==null?fmt(mediaDiaria):'—'}</div></div>
+    <div class="de-kpi"><div class="label">Média pedidos / dia</div><div class="value">${mediaEncomendasDia!==null?fmt(mediaEncomendasDia):'—'}</div></div>
+    <div class="de-kpi"><div class="label">EDR médio do mês</div><div class="value">${edrGlobal!==null?edrHtml(edrGlobal):'—'}</div></div>
+    <div class="de-kpi"><div class="label">Dias com registo</div><div class="value">${diasComDados} / ${dates.length}</div></div>
   `;
   wrap.appendChild(kpis);
 
@@ -2307,8 +2375,8 @@ function renderAnual(wrap){
   if (prevMonthObj && prevMonthObj.ent>0) trendPct = (last.compEnt-prevMonthObj.ent)/prevMonthObj.ent;
   const trendLabel = last && last.isProjected ? `Tendência ${monthName(last.m)} (projetado) vs ${monthName(prevMonthObj?prevMonthObj.m:last.m)}` : `Tendência ${monthName(last?last.m:1)} vs mês anterior`;
   kpis.innerHTML = `
-    <div class="de-kpi"><div class="label">📦 Total entregues (ano)</div><div class="value green">${fmt(totalAno)}</div></div>
-    <div class="de-kpi"><div class="label">🎯 EDR médio (ano)</div><div class="value">${edrAno!==null?edrHtml(edrAno):'—'}</div></div>
+    <div class="de-kpi"><div class="label">Total entregues (ano)</div><div class="value green">${fmt(totalAno)}</div></div>
+    <div class="de-kpi"><div class="label">EDR médio (ano)</div><div class="value">${edrAno!==null?edrHtml(edrAno):'—'}</div></div>
     <div class="de-kpi"><div class="label">Meses com dados</div><div class="value">${months.length}</div></div>
     <div class="de-kpi"><div class="label">${trendLabel}</div><div class="value ${trendPct>0?'green':trendPct<0?'red':''}">${trendPct!==null?(trendPct>=0?'+':'')+pct(trendPct):'—'}</div></div>
   `;
@@ -2421,12 +2489,12 @@ function renderPorSetor(wrap){
   const withVolume = sectorList.filter(s=>s.entregues>0);
   const worst = withVolume.length>1 ? withVolume[withVolume.length-1] : null;
   kpis.innerHTML = `
-    <div class="de-kpi"><div class="label">📦 Total entregues (${periodLabel})</div><div class="value green">${fmt(totalEnt)}</div></div>
-    <div class="de-kpi"><div class="label">🧾 Total encomendas (${periodLabel})</div><div class="value">${fmt(totalGeral)}</div></div>
-    <div class="de-kpi"><div class="label">🎯 EDR total</div><div class="value">${edrGeral!==null?edrHtml(edrGeral):'—'}</div></div>
-    <div class="de-kpi"><div class="label">🏷 Setores ativos</div><div class="value">${sectorList.length}</div></div>
-    <div class="de-kpi"><div class="label">📈 Setor com mais volume</div><div class="value" style="font-size:16px;">${sectorList[0]?sectorList[0].name:'—'}</div></div>
-    <div class="de-kpi"><div class="label">📉 Setor com menos volume</div><div class="value" style="font-size:16px;">${worst?worst.name:'—'}</div></div>
+    <div class="de-kpi"><div class="label">Total entregues (${periodLabel})</div><div class="value green">${fmt(totalEnt)}</div></div>
+    <div class="de-kpi"><div class="label">Total encomendas (${periodLabel})</div><div class="value">${fmt(totalGeral)}</div></div>
+    <div class="de-kpi"><div class="label">EDR total</div><div class="value">${edrGeral!==null?edrHtml(edrGeral):'—'}</div></div>
+    <div class="de-kpi"><div class="label">Setores ativos</div><div class="value">${sectorList.length}</div></div>
+    <div class="de-kpi"><div class="label">Setor com mais volume</div><div class="value" style="font-size:16px;">${sectorList[0]?sectorList[0].name:'—'}</div></div>
+    <div class="de-kpi"><div class="label">Setor com menos volume</div><div class="value" style="font-size:16px;">${worst?worst.name:'—'}</div></div>
   `;
   wrap.appendChild(kpis);
 
@@ -2603,11 +2671,11 @@ function renderPorCliente(wrap){
   const kpis = document.createElement('div');
   kpis.className = 'de-kpis';
   kpis.innerHTML = `
-    <div class="de-kpi"><div class="label">📦 Total histórico entregues</div><div class="value green">${fmt(overallStats.entregues)}</div></div>
-    <div class="de-kpi"><div class="label">🎯 EDR histórico</div><div class="value">${overallStats.edr!==null?edrHtml(overallStats.edr):'—'}</div></div>
-    <div class="de-kpi"><div class="label">🌟 Melhor dia da semana</div><div class="value" style="font-size:16px;">${bestWd?bestWd.w+' ('+edrHtml(bestWd.edr)+')':'—'}</div></div>
-    <div class="de-kpi"><div class="label">⚠️ Pior dia da semana</div><div class="value" style="font-size:16px;">${worstWd?worstWd.w+' ('+edrHtml(worstWd.edr)+')':'—'}</div></div>
-    <div class="de-kpi"><div class="label">🔁 Vs. mês anterior${curProj.isProjected?' <span title="Mês em curso — projeção de fecho com base nos '+curProj.dias+' dias já registados" style="cursor:help;">📊</span>':''}</div><div class="value ${momChange>0?'green':momChange<0?'red':''}">${momChange!==null?(momChange>=0?'+':'')+pct(momChange):'—'}</div></div>
+    <div class="de-kpi"><div class="label">Total histórico entregues</div><div class="value green">${fmt(overallStats.entregues)}</div></div>
+    <div class="de-kpi"><div class="label">EDR histórico</div><div class="value">${overallStats.edr!==null?edrHtml(overallStats.edr):'—'}</div></div>
+    <div class="de-kpi"><div class="label">Melhor dia da semana</div><div class="value" style="font-size:16px;">${bestWd?bestWd.w+' ('+edrHtml(bestWd.edr)+')':'—'}</div></div>
+    <div class="de-kpi"><div class="label">Pior dia da semana</div><div class="value" style="font-size:16px;">${worstWd?worstWd.w+' ('+edrHtml(worstWd.edr)+')':'—'}</div></div>
+    <div class="de-kpi"><div class="label">Vs. mês anterior${curProj.isProjected?' <span title="Mês em curso — projeção de fecho com base nos '+curProj.dias+' dias já registados" style="cursor:help;">📊</span>':''}</div><div class="value ${momChange>0?'green':momChange<0?'red':''}">${momChange!==null?(momChange>=0?'+':'')+pct(momChange):'—'}</div></div>
   `;
   wrap.appendChild(kpis);
 
@@ -2662,7 +2730,7 @@ function renderPorCliente(wrap){
     const extraPeriodLabel = analisesSel.extraMode==='mes' ? monthName(analisesSel.extraMonth)+'/'+analisesSel.extraYear : 'todos os anos';
     extraWrap.innerHTML = `
       <div class="de-flex-between" style="margin-bottom:10px;">
-        <h3 style="margin-bottom:0;">📋 Outros números registados (${extraPeriodLabel})</h3>
+        <h3 style="margin-bottom:0;">Outros números registados (${extraPeriodLabel})</h3>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
           <select id="an-extra-mode" style="background:var(--navy);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-size:12px;">
             <option value="todos">Todos os anos</option>
@@ -2785,15 +2853,15 @@ function renderHistorico(){
   const today = todayISO();
   const editsToday = STATE.auditLog.filter(e=>e.ts.slice(0,10)===today).length;
   summary.innerHTML = `
-    <div class="de-kpi"><div class="label">📚 Total de edições</div><div class="value">${STATE.auditLog.length}</div></div>
-    <div class="de-kpi"><div class="label">🗓 Edições hoje</div><div class="value blue">${editsToday}</div></div>
-    <div class="de-kpi"><div class="label">🧑‍💻 Utilizadores</div><div class="value">${users.length}</div></div>
+    <div class="de-kpi"><div class="label">Total de edições</div><div class="value">${STATE.auditLog.length}</div></div>
+    <div class="de-kpi"><div class="label">Edições hoje</div><div class="value blue">${editsToday}</div></div>
+    <div class="de-kpi"><div class="label">Utilizadores</div><div class="value">${users.length}</div></div>
   `;
   wrap.appendChild(summary);
 
   const listCard = document.createElement('div');
   listCard.className = 'de-card';
-  listCard.innerHTML = `<h3>📜 Registo de alterações</h3>`;
+  listCard.innerHTML = `<h3>Registo de alterações</h3>`;
   if (!entries.length){
     listCard.innerHTML += `<div class="de-empty" style="padding:24px 0;">Sem alterações registadas ${q||historicoFilterUser!=='all'?'para este filtro':'ainda'}.</div>`;
   } else {
@@ -2877,15 +2945,15 @@ function renderAlertas(){
   const kpis = document.createElement('div');
   kpis.className = 'de-kpis';
   kpis.innerHTML = `
-    <div class="de-kpi"><div class="label">${totalMissing===0?'✅':'⚠️'} Dias em falta</div><div class="value ${totalMissing===0?'green':'red'}">${totalMissing}</div></div>
-    <div class="de-kpi"><div class="label">🏷 Operações com pendências</div><div class="value">${results.filter(r=>r.missing.length).length} de ${opsToCheck.length}</div></div>
+    <div class="de-kpi"><div class="label">Dias em falta</div><div class="value ${totalMissing===0?'green':'red'}">${totalMissing}</div></div>
+    <div class="de-kpi"><div class="label">Operações com pendências</div><div class="value">${results.filter(r=>r.missing.length).length} de ${opsToCheck.length}</div></div>
   `;
   wrap.appendChild(kpis);
 
   if (totalMissing===0){
     const ok = document.createElement('div');
     ok.className = 'de-empty';
-    ok.innerHTML = `<div class="big">✅</div>Tudo preenchido! Não há dias em falta ${alertasOpFilter==='all'?'em nenhuma operação':'em '+opsToCheck[0].name}.`;
+    ok.innerHTML = `<div class="big" aria-hidden="true"><svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M8 12.5l2.5 2.5L16 9.5"></path></svg></div>Tudo preenchido! Não há dias em falta ${alertasOpFilter==='all'?'em nenhuma operação':'em '+opsToCheck[0].name}.`;
     wrap.appendChild(ok);
     body.innerHTML = ''; body.appendChild(wrap);
     return;
@@ -3220,7 +3288,7 @@ function renderOpEditor(op){
         </div>
         <button class="de-btn danger" id="rep-remove-group">Remover grupo repetido</button>
       </div>
-      <div class="de-section-label" style="margin-top:10px;">Entidades (${op.repeating.entityLabel.toLowerCase()}s) — e loja/localização opcional</div>
+          <div class="de-section-label" style="margin-top:10px;">Entidades (${plural(op.repeating.entityLabel.toLowerCase())}) — e loja/localização opcional</div>
       <div id="rep-entities-editable"></div>
       <div class="de-inline-add"><input type="text" id="new-entity" placeholder="adicionar ${op.repeating.entityLabel.toLowerCase()}…" /><input type="text" id="new-entity-loja" placeholder="loja (opcional)" style="max-width:140px;" /><button class="de-btn small" id="add-entity">Adicionar</button></div>
       <div class="de-section-label" style="margin-top:14px;">Campos por entidade</div>
