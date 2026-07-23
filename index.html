@@ -1923,7 +1923,7 @@ function renderRegisto(){
 // ============================================================
 // RENDER: ANÁLISES TAB
 // ============================================================
-let analisesSel = { subtab:'mensal', opId:'all', year:2026, month: new Date().getMonth()+1, sectorPeriod:'mes', clientPeriod:'dia', clientYear:2026, clientLoja:'all', clientEntity:'all', extraMode:'todos', extraMonth: new Date().getMonth()+1, extraYear:2026 };
+let analisesSel = { subtab:'mensal', opId:'all', year:2026, month: new Date().getMonth()+1, sectorPeriod:'mes', clientPeriod:'dia', clientYear:2026, clientLoja:'all', clientEntity:'all', mensalLoja:'all', mensalEntity:'all', extraMode:'todos', extraMonth: new Date().getMonth()+1, extraYear:2026 };
 let chartInstances = [];
 function destroyCharts(){ chartInstances.forEach(c=>c.destroy()); chartInstances = []; }
 
@@ -2134,14 +2134,61 @@ function renderMensal(wrap){
   controls.innerHTML = `
     <div class="de-field"><label>Operação</label><select id="an-op"><option value="all">Todas</option>${opts}</select></div>
     <div class="de-field"><label>Mês</label><select id="an-month">${[1,2,3,4,5,6,7].map(m=>`<option value="${m}">${monthName(m)}</option>`).join('')}</select></div>
+    <div class="de-field" id="an-mensal-loja-field"><label>Loja</label><select id="an-mensal-loja"></select></div>
+    <div class="de-field" id="an-mensal-entity-field"><label id="an-mensal-entity-label">Motorista</label><select id="an-mensal-entity"></select></div>
   `;
   wrap.appendChild(controls);
   controls.querySelector('#an-op').value = analisesSel.opId;
   controls.querySelector('#an-month').value = analisesSel.month;
-  controls.querySelector('#an-op').onchange = (e)=>{ analisesSel.opId = e.target.value; render(); };
+  controls.querySelector('#an-op').onchange = (e)=>{ analisesSel.opId = e.target.value; analisesSel.mensalLoja = 'all'; analisesSel.mensalEntity = 'all'; render(); };
   controls.querySelector('#an-month').onchange = (e)=>{ analisesSel.month = Number(e.target.value); render(); };
 
   const ops = analisesSel.opId==='all' ? STATE.operations.filter(o=>o.active) : STATE.operations.filter(o=>o.id===analisesSel.opId);
+
+  // Loja/Região — mesmo mecanismo genérico do "Por Cliente": só aparece
+  // quando uma operação específica está selecionada (ex.: Auchan por
+  // Região, Domino's/JustSushi por Loja).
+  const singleOp = analisesSel.opId!=='all' ? ops[0] : null;
+  const lojaField = controls.querySelector('#an-mensal-loja-field');
+  const entityField = controls.querySelector('#an-mensal-entity-field');
+  let entityFilter = null;
+  if (singleOp && singleOp.repeating && singleOp.repeating.entities.length){
+    const lojas = [...new Set(Object.values(singleOp.repeating.entityMeta||{}).map(m=>m&&m.loja).filter(Boolean))].sort();
+    if (lojas.length){
+      lojaField.style.display = '';
+      const lojaSelect = controls.querySelector('#an-mensal-loja');
+      lojaSelect.innerHTML = `<option value="all">Todas as lojas</option>${lojas.map(l=>`<option value="${l}">${l}</option>`).join('')}`;
+      if (!analisesSel.mensalLoja || (analisesSel.mensalLoja!=='all' && !lojas.includes(analisesSel.mensalLoja))) analisesSel.mensalLoja = 'all';
+      lojaSelect.value = analisesSel.mensalLoja;
+      lojaSelect.onchange = (e)=>{ analisesSel.mensalLoja = e.target.value; analisesSel.mensalEntity = 'all'; render(); };
+    } else {
+      lojaField.style.display = 'none';
+      analisesSel.mensalLoja = 'all';
+    }
+    entityField.style.display = '';
+    controls.querySelector('#an-mensal-entity-label').textContent = singleOp.repeating.entityLabel;
+    const entitiesForList = singleOp.repeating.entities.filter(ent=>{
+      if (analisesSel.mensalLoja==='all') return true;
+      return ((singleOp.repeating.entityMeta||{})[ent]||{}).loja===analisesSel.mensalLoja;
+    }).sort((a,b)=>a.localeCompare(b));
+    const entitySelect = controls.querySelector('#an-mensal-entity');
+    entitySelect.innerHTML = `<option value="all">Todos</option>${entitiesForList.map(e=>`<option value="${e}">${e}</option>`).join('')}`;
+    if (!analisesSel.mensalEntity || (analisesSel.mensalEntity!=='all' && !entitiesForList.includes(analisesSel.mensalEntity))) analisesSel.mensalEntity = 'all';
+    entitySelect.value = analisesSel.mensalEntity;
+    entitySelect.onchange = (e)=>{ analisesSel.mensalEntity = e.target.value; render(); };
+    if (analisesSel.mensalLoja!=='all' || analisesSel.mensalEntity!=='all'){
+      entityFilter = new Set(singleOp.repeating.entities.filter(ent=>{
+        if (analisesSel.mensalEntity!=='all') return ent===analisesSel.mensalEntity;
+        return ((singleOp.repeating.entityMeta||{})[ent]||{}).loja===analisesSel.mensalLoja;
+      }));
+    }
+  } else {
+    lojaField.style.display = 'none';
+    entityField.style.display = 'none';
+    analisesSel.mensalLoja = 'all';
+    analisesSel.mensalEntity = 'all';
+  }
+
   const dates = allDatesForMonth(analisesSel.year, analisesSel.month).filter(d=>d<=todayISO());
 
   let totalEnt=0, totalGeral=0, diasComDados=0;
@@ -2149,11 +2196,11 @@ function renderMensal(wrap){
   const perOp = [];
 
   ops.forEach(op=>{
-    const s = computeOpRangeStats(op, dates);
+    const s = computeOpRangeStats(op, dates, entityFilter);
     totalEnt += s.entregues; totalGeral += s.total;
     perOp.push({name:op.name, ...s});
     dates.forEach((d,idx)=>{
-      const ds = computeOpDayStats(op, d);
+      const ds = computeOpDayStats(op, d, entityFilter);
       if (ds){ perDay[idx].ent += ds.entregues; perDay[idx].total += ds.total; perDay[idx].hasData = true; }
     });
   });
@@ -2196,8 +2243,8 @@ function renderMensal(wrap){
   destroyCharts();
   safeChart('an-trend', {
     data:{ labels: perDay.map(d=>d.date.slice(8)), datasets:[
-      { type:'bar', label:'Entregues', data: perDay.map(d=>d.hasData?d.ent:null), backgroundColor:chartBlue(), borderRadius:4, yAxisID:'y' },
-      { type:'line', label:'EDR%', data: perDay.map(d=>d.hasData && d.total>0 ? (d.ent/d.total*100) : null), borderColor:chartGreen(), backgroundColor:chartGreen(), tension:0.3, yAxisID:'y1', pointRadius:2, labelSuffix:'%', hideLabels:true }
+      { type:'bar', label:'Entregues', data: perDay.map(d=>d.hasData?d.ent:null), backgroundColor:chartBlue(), borderRadius:4, yAxisID:'y', order:2 },
+      { type:'line', label:'EDR%', data: perDay.map(d=>d.hasData && d.total>0 ? (d.ent/d.total*100) : null), borderColor:chartGreen(), backgroundColor:chartGreen(), tension:0.3, yAxisID:'y1', pointRadius:2, labelSuffix:'%', hideLabels:true, order:1 }
     ]},
     options:{ responsive:true, plugins:{legend:{labels:{color:chartLegend()}}},
       scales:{
@@ -2305,8 +2352,8 @@ function renderAnual(wrap){
     data: {
       labels: months.map(m=>monthName(m.m).slice(0,3)),
       datasets: [
-        { type:'bar', label:'Entregues', data: months.map(m=>m.ent), backgroundColor:chartBlue(), borderRadius:4, yAxisID:'y' },
-        { type:'line', label:'EDR%', data: months.map(m=>m.edr!==null?m.edr*100:null), borderColor:chartGreen(), backgroundColor:chartGreen(), tension:0.3, yAxisID:'y1', pointRadius:3, labelSuffix:'%' }
+        { type:'bar', label:'Entregues', data: months.map(m=>m.ent), backgroundColor:chartBlue(), borderRadius:4, yAxisID:'y', order:2 },
+        { type:'line', label:'EDR%', data: months.map(m=>m.edr!==null?m.edr*100:null), borderColor:chartGreen(), backgroundColor:chartGreen(), tension:0.3, yAxisID:'y1', pointRadius:3, labelSuffix:'%', order:1 }
       ]
     },
     options: {
@@ -2405,8 +2452,8 @@ function renderPorSetor(wrap){
     data:{
       labels: sectorList.map(s=>s.name),
       datasets:[
-        { type:'bar', label:'Entregues', data: sectorList.map(s=>s.entregues), backgroundColor:chartBlue(), borderRadius:4, yAxisID:'y' },
-        { type:'line', label:'EDR%', data: sectorList.map(s=>s.edr!==null?s.edr*100:null), borderColor:chartGreen(), backgroundColor:chartGreen(), tension:0.3, yAxisID:'y1', pointRadius:4, labelSuffix:'%' }
+        { type:'bar', label:'Entregues', data: sectorList.map(s=>s.entregues), backgroundColor:chartBlue(), borderRadius:4, yAxisID:'y', order:2 },
+        { type:'line', label:'EDR%', data: sectorList.map(s=>s.edr!==null?s.edr*100:null), borderColor:chartGreen(), backgroundColor:chartGreen(), tension:0.3, yAxisID:'y1', pointRadius:4, labelSuffix:'%', order:1 }
       ]
     },
     options:{
@@ -2661,8 +2708,8 @@ function renderPorCliente(wrap){
     data: {
       labels: chartLabels,
       datasets: [
-        { type:'bar', label:'Entregues', data: chartEnt, backgroundColor:chartBlue(), yAxisID:'y', hideLabels: chartLabels.length>31 },
-        { type:'line', label:'EDR%', data: chartEdr, borderColor:chartGreen(), yAxisID:'y1', pointRadius: groupBy==='day'?1:3, tension:0.3, labelSuffix:'%', hideLabels: groupBy==='day' }
+        { type:'bar', label:'Entregues', data: chartEnt, backgroundColor:chartBlue(), yAxisID:'y', hideLabels: chartLabels.length>31, order:2 },
+        { type:'line', label:'EDR%', data: chartEdr, borderColor:chartGreen(), yAxisID:'y1', pointRadius: groupBy==='day'?1:3, tension:0.3, labelSuffix:'%', hideLabels: groupBy==='day', order:1 }
       ]
     },
     options:{
