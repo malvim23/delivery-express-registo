@@ -8,31 +8,31 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
-  html, body { margin: 0; padding: 0; background: #050f24; min-height: 100vh; }
+  html, body { margin: 0; padding: 0; background: #0b0d12; min-height: 100vh; }
   #de-app-root { border-radius: 0 !important; min-height: 100vh !important; }
   #de-app-root {
-    --navy: #050f24;
-    --panel: #0a1a38;
-    --panel-raised: #0e2247;
-    --border: #1b2f56;
-    --blue: #307ce0;
-    --blue-dim: #245da8;
-    --blue-glow: rgba(48,124,224,0.14);
-    --text: #eaf0fb;
-    --text-dim: #8b9dc3;
-    --text-faint: #52628c;
-    --green: #38c793;
-    --red: #ef5a6f;
-    --shadow-sm: 0 2px 8px rgba(0,0,0,0.18);
-    --shadow-md: 0 4px 16px rgba(0,0,0,0.18);
-    --shadow-lg: 0 10px 34px rgba(0,0,0,0.24);
-    --header-bg: radial-gradient(ellipse at top left, rgba(48,124,224,0.16), transparent 55%), linear-gradient(180deg, var(--panel-raised), var(--panel));
-    --hero-bg: radial-gradient(ellipse at top left, rgba(48,124,224,0.22), transparent 60%), linear-gradient(135deg, var(--panel-raised), var(--panel));
-    --card-bg: linear-gradient(180deg, rgba(14,34,71,0.5), rgba(10,26,56,0.5)), var(--panel);
+    --navy: #0b0d12;
+    --panel: #14161d;
+    --panel-raised: #1b1e27;
+    --border: #232631;
+    --blue: #3b6fe0;
+    --blue-dim: #2451ad;
+    --blue-glow: rgba(59,111,224,0.16);
+    --text: #eef0f4;
+    --text-dim: #8d94a3;
+    --text-faint: #5c626f;
+    --green: #22c274;
+    --red: #e5484d;
+    --shadow-sm: 0 2px 8px rgba(0,0,0,0.28);
+    --shadow-md: 0 6px 18px rgba(0,0,0,0.32);
+    --shadow-lg: 0 16px 40px rgba(0,0,0,0.45);
+    --header-bg: radial-gradient(ellipse at top left, rgba(59,111,224,0.16), transparent 55%), linear-gradient(180deg, var(--panel-raised), var(--panel));
+    --hero-bg: radial-gradient(ellipse at top left, rgba(59,111,224,0.22), transparent 60%), linear-gradient(135deg, var(--panel-raised), var(--panel));
+    --card-bg: linear-gradient(180deg, rgba(27,30,39,0.5), rgba(20,22,29,0.5)), var(--panel);
     --input-bg: var(--navy);
-    --row-hover: rgba(48,124,224,0.05);
+    --row-hover: rgba(59,111,224,0.06);
     --logo-chip-bg: #ffffff;
-    --table-border: rgba(27,47,86,0.5);
+    --table-border: rgba(35,38,49,0.7);
     --font-ui: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     --font-mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
 
@@ -48,28 +48,28 @@
     transition: background .25s ease, color .25s ease;
   }
   #de-app-root[data-theme="light"] {
-    --navy: #eef2fa;
+    --navy: #f7f8fa;
     --panel: #ffffff;
     --panel-raised: #ffffff;
-    --border: #dbe3f2;
-    --blue: #2266cc;
-    --blue-dim: #17509e;
-    --blue-glow: rgba(34,102,204,0.10);
-    --text: #0d1b33;
-    --text-dim: #46567a;
-    --text-faint: #7788a8;
-    --green: #0f9d63;
-    --red: #d42d4c;
-    --shadow-sm: 0 2px 10px rgba(30,60,120,0.07);
-    --shadow-md: 0 6px 20px rgba(30,60,120,0.09);
-    --shadow-lg: 0 14px 38px rgba(30,60,120,0.14);
-    --header-bg: linear-gradient(180deg, #ffffff, #f4f8ff);
-    --hero-bg: radial-gradient(ellipse at top left, rgba(34,102,204,0.10), transparent 60%), linear-gradient(135deg, #ffffff, #eef4ff);
+    --border: #e5e8ef;
+    --blue: #3b6fe0;
+    --blue-dim: #2451ad;
+    --blue-glow: rgba(59,111,224,0.12);
+    --text: #12141c;
+    --text-dim: #666d7d;
+    --text-faint: #9298a6;
+    --green: #0a9d5c;
+    --red: #d4383f;
+    --shadow-sm: 0 1px 2px rgba(20,24,34,0.04), 0 1px 1px rgba(20,24,34,0.03);
+    --shadow-md: 0 4px 14px rgba(20,24,34,0.06), 0 1px 3px rgba(20,24,34,0.04);
+    --shadow-lg: 0 12px 32px rgba(20,24,34,0.10), 0 4px 10px rgba(20,24,34,0.05);
+    --header-bg: linear-gradient(180deg, #ffffff, #f6f8fc);
+    --hero-bg: radial-gradient(ellipse at top left, rgba(59,111,224,0.10), transparent 60%), linear-gradient(135deg, #ffffff, #f1f5fd);
     --card-bg: #ffffff;
-    --input-bg: #f5f8fd;
-    --row-hover: rgba(34,102,204,0.045);
+    --input-bg: #f1f3f6;
+    --row-hover: rgba(59,111,224,0.045);
     --logo-chip-bg: #ffffff;
-    --table-border: rgba(219,227,242,0.9);
+    --table-border: #e5e8ef;
   }
   #de-app-root * { box-sizing: border-box; }
   #de-app-root, #de-app-root * { transition: background-color .2s ease, border-color .2s ease, color .2s ease, box-shadow .2s ease; }
@@ -86,7 +86,7 @@
     background: linear-gradient(135deg, var(--blue), var(--blue-dim));
     display: flex; align-items: center; justify-content: center;
     font-weight: 900; font-size: 14px; color: #fff; letter-spacing: -0.5px;
-    box-shadow: 0 0 0 1px rgba(47,125,250,0.35), 0 6px 18px rgba(47,125,250,0.3);
+    box-shadow: 0 0 0 1px rgba(59,111,224,0.35), 0 6px 18px rgba(59,111,224,0.3);
   }
   .de-brand .mark { color: #fff; font-weight: 800; letter-spacing: 0.03em; font-size: 15.5px; }
   .de-brand .logo-chip {
@@ -111,7 +111,7 @@
     transition: all .15s ease; font-family: var(--font-ui);
   }
   .de-tab:hover { color: var(--text); background: rgba(255,255,255,0.03); }
-  .de-tab.active { background: linear-gradient(135deg, var(--blue), var(--blue-dim)); color: #fff; box-shadow: 0 3px 10px rgba(47,125,250,0.35); }
+  .de-tab.active { background: linear-gradient(135deg, var(--blue), var(--blue-dim)); color: #fff; box-shadow: 0 3px 10px rgba(59,111,224,0.35); }
 
   .de-body { flex: 1; overflow-y: auto; padding: 22px; }
   .de-body > div { animation: deFadeIn .28s ease; }
@@ -139,9 +139,9 @@
   .de-btn {
     background: linear-gradient(135deg, var(--blue), var(--blue-dim)); color: #fff; border: none; padding: 10px 18px;
     border-radius: 8px; font-weight: 700; font-size: 13px; cursor: pointer; font-family: var(--font-ui);
-    transition: all .15s; box-shadow: 0 3px 10px rgba(47,125,250,0.25);
+    transition: all .15s; box-shadow: 0 3px 10px rgba(59,111,224,0.25);
   }
-  .de-btn:hover { transform: translateY(-1px); box-shadow: 0 5px 16px rgba(47,125,250,0.35); }
+  .de-btn:hover { transform: translateY(-1px); box-shadow: 0 5px 16px rgba(59,111,224,0.35); }
   .de-btn.ghost { background: transparent; color: var(--text-dim); border: 1px solid var(--border); font-weight: 600; box-shadow: none; }
   .de-btn.ghost:hover { color: var(--text); border-color: var(--blue-dim); transform: none; box-shadow: none; }
   .de-btn.danger { background: transparent; color: var(--red); border: 1px solid rgba(239,90,111,0.4); font-weight: 600; padding: 6px 10px; font-size: 12px; box-shadow: none; }
@@ -280,7 +280,7 @@
     border-radius: 12px; padding: 18px 22px; margin-bottom: 18px;
     background: linear-gradient(135deg, var(--blue-dim), var(--blue));
     display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;
-    box-shadow: 0 8px 30px rgba(47,125,250,0.25);
+    box-shadow: 0 8px 30px rgba(59,111,224,0.25);
   }
   .de-fecho .fecho-title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: rgba(255,255,255,0.8); font-weight: 700; margin-bottom: 4px; }
   .de-fecho .fecho-op { font-size: 16px; font-weight: 700; color: #fff; }
@@ -295,7 +295,7 @@
     background: var(--panel); border: 1px solid var(--border); color: var(--text-dim); transition: all .15s;
   }
   .de-subtab:hover { color: var(--text); border-color: var(--blue-dim); }
-  .de-subtab.active { background: linear-gradient(135deg, var(--blue-glow), rgba(47,125,250,0.08)); border-color: var(--blue); color: var(--blue); }
+  .de-subtab.active { background: linear-gradient(135deg, var(--blue-glow), rgba(59,111,224,0.08)); border-color: var(--blue); color: var(--blue); }
 
   .de-trend-badge { font-family: var(--font-mono); font-weight: 700; font-size: 12px; padding: 3px 8px; border-radius: 6px; }
   .de-trend-badge.up { color: var(--green); background: rgba(56,199,147,0.12); }
@@ -339,9 +339,9 @@
     <div class="de-tabs" id="de-tabs"></div>
     <div class="de-header-right">
       <div class="de-live-clock" id="de-live-clock"></div>
-      <div class="de-conn-status" id="de-conn-status">🔴 A ligar…</div>
-      <button class="de-theme-toggle" id="de-user-name-btn" title="Alterar o teu nome de utilizador">👤</button>
-      <button class="de-theme-toggle" id="de-theme-toggle" title="Alternar modo claro/escuro">🌙</button>
+      <div class="de-conn-status" id="de-conn-status"><svg viewBox="0 0 24 24" width="7" height="7" fill="currentColor" style="vertical-align:1px;"><circle cx="12" cy="12" r="10"/></svg> A ligar…</div>
+      <button class="de-theme-toggle" id="de-user-name-btn" title="Alterar o teu nome de utilizador"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></button>
+      <button class="de-theme-toggle" id="de-theme-toggle" title="Alternar modo claro/escuro"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"/></svg></button>
     </div>
   </div>
   <div class="de-body" id="de-body">
@@ -373,13 +373,38 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
+// ── ICONS (SVG, substitui emojis) ───────────────────────────────────────────
+const ICONS={
+  pencil:'<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><path d="M12 20h9"/><path d="M16.376 3.622a1 1 0 0 1 3.002 3.002L7.368 18.635l-4.096 1.094 1.094-4.096Z"/></svg>',
+  trash:'<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-.867 12.142A2 2 0 0 1 16.138 20H7.862a2 2 0 0 1-1.995-1.858L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>',
+  x:'<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;"><path d="M18 6 6 18"/><path d="M6 6l12 12"/></svg>',
+  plus:'<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><path d="M12 5v14"/><path d="M5 12h14"/></svg>',
+  check:'<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><path d="M20 6 9 17l-5-5"/></svg>',
+  warning:'<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+  inbox:'<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11Z"/></svg>',
+  inbox2:'<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11Z"/></svg>',
+  chart:'<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>',
+  chartBig:'<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>',
+  moon:'<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"/></svg>',
+  sun:'<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66 4.93 19.07M19.07 4.93l-1.41 1.41"/></svg>',
+  gear:'<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg>',
+  refresh:'<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M3 21v-5h5"/></svg>',
+  user:'<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
+  save:'<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg>',
+  download:'<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>',
+  upload:'<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg>',
+  importIcon:'<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M21 21H3"/></svg>',
+  repeat:'<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><path d="m17 2 4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="m7 22-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/></svg>',
+  note:'<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><path d="M15.5 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8.5Z"/><path d="M15 3v6h6"/></svg>'
+};
+
 let currentTheme = 'dark';
-function chartAxis(){ return currentTheme==='light' ? '#5a6b8c' : '#52628c'; }
-function chartLegend(){ return currentTheme==='light' ? '#46567a' : '#8b9dc3'; }
-function chartGrid(){ return currentTheme==='light' ? 'rgba(34,102,204,0.08)' : 'rgba(27,47,86,0.5)'; }
-function chartBlue(){ return currentTheme==='light' ? '#2266cc' : '#307ce0'; }
-function chartGreen(){ return currentTheme==='light' ? '#0f9d63' : '#38c793'; }
-function chartLabelText(){ return currentTheme==='light' ? '#0d1b33' : '#eaf0fb'; }
+function chartAxis(){ return currentTheme==='light' ? '#666d7d' : '#5c626f'; }
+function chartLegend(){ return currentTheme==='light' ? '#666d7d' : '#8d94a3'; }
+function chartGrid(){ return currentTheme==='light' ? 'rgba(59,111,224,0.08)' : 'rgba(35,38,49,0.7)'; }
+function chartBlue(){ return currentTheme==='light' ? '#3b6fe0' : '#3b6fe0'; }
+function chartGreen(){ return currentTheme==='light' ? '#0a9d5c' : '#22c274'; }
+function chartLabelText(){ return currentTheme==='light' ? '#12141c' : '#eef0f4'; }
 
 let valueLabelsRegistered = false;
 function deLabelBoxesOverlap(a,b){
@@ -629,7 +654,8 @@ const HIST_SEED = {};
 function setConnStatus(ok){
   const el = document.getElementById('de-conn-status');
   if (!el) return;
-  el.textContent = ok ? '🟢 Sincronizado' : '🔴 Sem ligação';
+  const dot='<svg viewBox="0 0 24 24" width="7" height="7" fill="currentColor" style="vertical-align:1px;color:'+(ok?'var(--green)':'var(--red)')+';"><circle cx="12" cy="12" r="10"/></svg>';
+  el.innerHTML = dot+' '+(ok ? 'Sincronizado' : 'Sem ligação');
   el.title = ok ? 'Ligado ao Firebase — dados partilhados com a equipa' : 'Sem ligação ao Firebase — os dados podem não estar a guardar';
 }
 
@@ -653,7 +679,7 @@ async function saveOperations(ops){
   } catch(e){
     console.error('saveOperations falhou', e);
     setConnStatus(false);
-    toast('⚠️ Não foi possível guardar — verifica a ligação à internet');
+    toast(ICONS.warning+' Não foi possível guardar — verifica a ligação à internet');
     return false;
   }
 }
@@ -670,7 +696,7 @@ async function saveRecords(opId, records){
   } catch(e){
     console.error('saveRecords falhou', e);
     setConnStatus(false);
-    toast('⚠️ Não foi possível guardar — verifica a ligação à internet');
+    toast(ICONS.warning+' Não foi possível guardar — verifica a ligação à internet');
     return false;
   }
 }
@@ -843,7 +869,7 @@ function edrHtml(edrFraction){
 }
 function toast(msg){
   const el = document.getElementById('de-toast');
-  el.textContent = msg;
+  el.innerHTML = msg;
   el.classList.add('show');
   clearTimeout(STATE.toastTimer);
   STATE.toastTimer = setTimeout(()=>el.classList.remove('show'), 2600);
@@ -1018,7 +1044,7 @@ function renderTabs(){
     btn.className = 'de-tab' + (STATE.tab===id ? ' active' : '');
     if (id==='alertas'){
       const totalMissing = STATE.operations.filter(o=>o.active).reduce((s,o)=>s+computeAllMissingDays(o).length,0);
-      btn.innerHTML = label + (totalMissing>0 ? ` <span style="background:var(--red);color:#fff;border-radius:10px;padding:1px 6px;font-size:11px;margin-left:4px;">${totalMissing}</span>` : ' <span style="color:var(--green);">✓</span>');
+      btn.innerHTML = label + (totalMissing>0 ? ` <span style="background:var(--red);color:#fff;border-radius:10px;padding:1px 6px;font-size:11px;margin-left:4px;">${totalMissing}</span>` : ' <span style="color:var(--green);">'+ICONS.check+'</span>');
     } else {
       btn.textContent = label;
     }
@@ -1128,7 +1154,7 @@ function renderRegisto(){
       <input type="date" id="reg-date" value="${registoSel.date}" max="${todayISO()}" />
     </div>
     <div id="reg-status-holder"></div>
-    <button class="de-btn ghost small" id="reg-edit-op" style="margin-left:auto;">⚙ Editar campos desta operação</button>
+    <button class="de-btn ghost small" id="reg-edit-op" style="margin-left:auto;">${ICONS.gear} Editar campos desta operação</button>
   `;
   wrap.appendChild(row);
 
@@ -1149,7 +1175,7 @@ function renderRegisto(){
 
   const op = STATE.operations.find(o=>o.id===registoSel.opId);
   if (!op){
-    wrap.innerHTML += `<div class="de-empty"><div class="big">📭</div>Nenhuma operação ativa. Configure uma em "Configurações".</div>`;
+    wrap.innerHTML += `<div class="de-empty"><div class="big">${ICONS.inbox}</div>Nenhuma operação ativa. Configure uma em "Configurações".</div>`;
     body.innerHTML=''; body.appendChild(wrap);
     return;
   }
@@ -1159,9 +1185,9 @@ function renderRegisto(){
   const statusHolder = wrap.querySelector('#reg-status-holder');
   const isFalta = existing && existing.noOperation;
   const hasRealData = existing && !isFalta && (Object.keys(existing.fixed||{}).length || Object.values(existing.entities||{}).some(ev=>Object.keys(ev||{}).length));
-  statusHolder.innerHTML = `<span class="de-status ${isFalta?'inactive':existing?'saved':'new'}">${isFalta?'📭 marcado como sem operação':existing?'já tem registo — a editar':'ainda sem registo'}</span>
-    <button class="de-btn ghost small" id="reg-mark-falta" style="margin-left:8px;">${isFalta?'✕ Desmarcar':'📭 Marcar sem operação hoje'}</button>
-    ${existing ? `<button class="de-btn danger" id="reg-delete-record" style="margin-left:8px;">🗑 Apagar este registo permanentemente</button>` : ''}`;
+  statusHolder.innerHTML = `<span class="de-status ${isFalta?'inactive':existing?'saved':'new'}">${isFalta?ICONS.inbox+' marcado como sem operação':existing?'já tem registo — a editar':'ainda sem registo'}</span>
+    <button class="de-btn ghost small" id="reg-mark-falta" style="margin-left:8px;">${isFalta?ICONS.x+' Desmarcar':ICONS.inbox+' Marcar sem operação hoje'}</button>
+    ${existing ? `<button class="de-btn danger" id="reg-delete-record" style="margin-left:8px;">${ICONS.trash} Apagar este registo permanentemente</button>` : ''}`;
   statusHolder.querySelector('#reg-mark-falta').onclick = async ()=>{
     const recs = STATE.recordsCache[op.id] || (STATE.recordsCache[op.id] = {});
     if (isFalta){
@@ -1188,7 +1214,7 @@ function renderRegisto(){
       delete recs[registoSel.date];
       await saveRecords(op.id, recs);
       delete registoDrafts[draftKey()];
-      await logEdit('🗑 Apagou registo permanentemente', op.name + ' — ' + registoSel.date + ' (' + dataSummary + ')');
+      await logEdit('Apagou registo permanentemente', op.name + ' — ' + registoSel.date + ' (' + dataSummary + ')');
       toast('Registo apagado permanentemente');
       render();
     };
@@ -1234,14 +1260,14 @@ function renderRegisto(){
       </div>
       <div style="margin:10px 0;font-family:var(--font-mono);font-size:15px;" id="reg-summary-edr"></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        <button class="de-btn" id="reg-summary-save">💾 Guardar total do mês</button>
-        ${smRec ? `<button class="de-btn danger" id="reg-summary-clear">🗑 Remover total do mês</button>` : ''}
+        <button class="de-btn" id="reg-summary-save">${ICONS.save} Guardar total do mês</button>
+        ${smRec ? `<button class="de-btn danger" id="reg-summary-clear">${ICONS.trash} Remover total do mês</button>` : ''}
       </div>
       <div style="border-top:1px solid var(--border);margin-top:16px;padding-top:14px;">
         <div style="font-size:12px;color:var(--text-faint);margin-bottom:8px;">Ou importa vários meses de uma vez a partir de um ficheiro Excel (uma linha por mês) para <strong>${op.name}</strong>:</div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
-          <button class="de-btn ghost small" id="reg-summary-template">⬇ Baixar modelo Excel</button>
-          <button class="de-btn ghost small" id="reg-summary-import-btn">📤 Importar Excel</button>
+          <button class="de-btn ghost small" id="reg-summary-template">${ICONS.download} Baixar modelo Excel</button>
+          <button class="de-btn ghost small" id="reg-summary-import-btn">${ICONS.upload} Importar Excel</button>
           <input type="file" id="reg-summary-import-file" accept=".xlsx,.xls" style="display:none;" />
         </div>
         <div id="reg-summary-import-status" style="font-size:12px;color:var(--text-faint);margin-top:8px;"></div>
@@ -1272,7 +1298,7 @@ function renderRegisto(){
           const wbIn = XLSX.read(buf, { type:'array' });
           const wsIn = wbIn.Sheets[wbIn.SheetNames[0]];
           const rows = XLSX.utils.sheet_to_json(wsIn, { defval:'' });
-          if (!rows.length){ statusDiv.textContent = '⚠️ Ficheiro vazio ou sem linhas reconhecíveis.'; return; }
+          if (!rows.length){ statusDiv.innerHTML = ICONS.warning+' Ficheiro vazio ou sem linhas reconhecíveis.'; return; }
           const monthNamesNorm = [1,2,3,4,5,6,7,8,9,10,11,12].map(m=>monthName(m).toLowerCase());
           function parseMonth(v){
             if (v===''||v===undefined||v===null) return null;
@@ -1298,7 +1324,7 @@ function renderRegisto(){
             if (!Object.keys(vals).length){ errors.push(`Linha ${i+2}: nenhum campo reconhecido (verifica os nomes das colunas)`); return; }
             parsed.push({ month, year, vals });
           });
-          if (!parsed.length){ statusDiv.innerHTML = `⚠️ Nenhuma linha válida.<br>${errors.join('<br>')}`; return; }
+          if (!parsed.length){ statusDiv.innerHTML = `${ICONS.warning} Nenhuma linha válida.<br>${errors.join('<br>')}`; return; }
           const summaryText = parsed.map(p=>`${monthName(p.month)}/${p.year}`).join(', ');
           if (!confirm(`Vais importar ${parsed.length} mês(es) para ${op.name}: ${summaryText}.\n\nRegistos diários já existentes nesses meses serão substituídos pelo total importado. Continuar?`)) { statusDiv.textContent = ''; return; }
           const recs = STATE.recordsCache[op.id] || (STATE.recordsCache[op.id] = {});
@@ -1312,12 +1338,12 @@ function renderRegisto(){
           });
           await saveRecords(op.id, recs);
           await logEdit('Importou Excel (totais mensais)', op.name + ' — ' + summaryText);
-          statusDiv.innerHTML = `<span style="color:var(--green);font-weight:700;">✓</span> ${parsed.length} mês(es) importado(s) com sucesso.` + (errors.length ? `<br><span style="color:var(--amber,#f59e0b);font-weight:700;">!</span> ${errors.length} linha(s) ignorada(s): ${errors.join('; ')}` : '');
+          statusDiv.innerHTML = `<span style="color:var(--green);font-weight:700;">${ICONS.check}</span> ${parsed.length} mês(es) importado(s) com sucesso.` + (errors.length ? `<br><span style="color:var(--amber,#f59e0b);font-weight:700;">!</span> ${errors.length} linha(s) ignorada(s): ${errors.join('; ')}` : '');
           toast('Excel importado');
           render();
         } catch(err){
           console.error(err);
-          statusDiv.textContent = '⚠️ Não foi possível ler este ficheiro. Confirma que é um .xlsx válido.';
+          statusDiv.innerHTML = ICONS.warning+' Não foi possível ler este ficheiro. Confirma que é um .xlsx válido.';
         }
         e.target.value = '';
       };
@@ -1385,7 +1411,7 @@ function renderRegisto(){
       });
     }
     alertBox.innerHTML = `
-      <div style="font-size:13px;color:var(--text);margin-bottom:8px;">⚠️ <strong style="color:var(--red);">${missingDays.length} dia(s)</strong> sem registo completo em ${op.name} este mês${op.repeating?' — passa o rato num dia para ver quem falta':''}:</div>
+      <div style="font-size:13px;color:var(--text);margin-bottom:8px;">${ICONS.warning} <strong style="color:var(--red);">${missingDays.length} dia(s)</strong> sem registo completo em ${op.name} este mês${op.repeating?' — passa o rato num dia para ver quem falta':''}:</div>
       <div style="display:flex;flex-wrap:wrap;gap:6px;">
         ${missingDays.map(d=>{
           const missingEnts = missingEntitiesForDay(d);
@@ -1415,7 +1441,7 @@ function renderRegisto(){
     const verifyBox = document.createElement('div');
     verifyBox.style.cssText = 'background:rgba(56,199,147,0.1);border:1px solid var(--green);border-radius:10px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;';
     verifyBox.innerHTML = `
-      <div style="font-size:13px;color:var(--text);">✓ Gravado no Firebase: <strong style="color:var(--green);">Entregues ${fmt(savedEnt)}</strong> · <strong style="color:var(--green);">Total ${fmt(savedTotal)}</strong> para ${registoSel.date.split('-').reverse().join('/')}</div>
+      <div style="font-size:13px;color:var(--text);">${ICONS.check} Gravado no Firebase: <strong style="color:var(--green);">Entregues ${fmt(savedEnt)}</strong> · <strong style="color:var(--green);">Total ${fmt(savedTotal)}</strong> para ${registoSel.date.split('-').reverse().join('/')}</div>
       <button class="de-btn small" id="reg-goto-analises">Ver isto nas Análises →</button>
     `;
     wrap.appendChild(verifyBox);
@@ -1489,13 +1515,13 @@ function renderRegisto(){
     editableFixed.forEach(f=>{
       const fdiv = document.createElement('div');
       fdiv.className = 'de-field';
-      fdiv.innerHTML = `<label>${f.label} <button class="de-rename-btn" data-rename-field="${f.key}" title="Renomear campo">✎</button></label><input type="number" min="0" step="1" data-fixed-key="${f.key}" value="${formVals.fixed[f.key] ?? ''}" placeholder="0" />`;
+      fdiv.innerHTML = `<label>${f.label} <button class="de-rename-btn" data-rename-field="${f.key}" title="Renomear campo">${ICONS.pencil}</button></label><input type="number" min="0" step="1" data-fixed-key="${f.key}" value="${formVals.fixed[f.key] ?? ''}" placeholder="0" />`;
       grid.appendChild(fdiv);
     });
     derivedFixed.forEach(f=>{
       const fdiv = document.createElement('div');
       fdiv.className = 'de-field';
-      fdiv.innerHTML = `<label>${f.label} <button class="de-rename-btn" data-rename-field="${f.key}" title="Renomear campo">✎</button> <span style="color:var(--blue);font-weight:700;">(soma automática)</span></label>
+      fdiv.innerHTML = `<label>${f.label} <button class="de-rename-btn" data-rename-field="${f.key}" title="Renomear campo">${ICONS.pencil}</button> <span style="color:var(--blue);font-weight:700;">(soma automática)</span></label>
         <div data-derived-fixed="${f.key}" data-derived-role="${f.role}" style="font-family:var(--font-mono);font-size:20px;font-weight:800;color:var(--green);padding:9px 0;">${fmt(computeDerivedTotal(f.role))}</div>`;
       grid.appendChild(fdiv);
     });
@@ -1594,8 +1620,8 @@ function renderRegisto(){
       const badge = isHistorical
         ? (histInactive ? ` <span class="de-badge inactive" style="margin-left:4px;">inativo nesta data</span>` : ' <span class="de-badge inactive" style="margin-left:4px;">antigo</span>')
         : '';
-      let tds = `<td class="ent-name">${ent}${badge}${isHistorical?'':' <button class="de-rename-btn" data-rename-entity="'+ent+'" title="Renomear">✎</button>'}</td>`;
-      if (hasLojas) tds += `<td class="ent-loja">${meta.loja||'—'} ${isHistorical?'':'<button class="de-rename-btn" data-rename-loja="'+ent+'" title="Editar loja">✎</button>'}</td>`;
+      let tds = `<td class="ent-name">${ent}${badge}${isHistorical?'':' <button class="de-rename-btn" data-rename-entity="'+ent+'" title="Renomear">'+ICONS.pencil+'</button>'}</td>`;
+      if (hasLojas) tds += `<td class="ent-loja">${meta.loja||'—'} ${isHistorical?'':'<button class="de-rename-btn" data-rename-loja="'+ent+'" title="Editar loja">'+ICONS.pencil+'</button>'}</td>`;
       op.repeating.fields.forEach(f=>{
         tds += `<td><input type="number" min="0" step="1" data-entity="${ent}" data-entity-key="${f.key}" value="${evals[f.key] ?? ''}" placeholder="0" ${isAbsent?'disabled':''} /></td>`;
       });
@@ -1607,7 +1633,7 @@ function renderRegisto(){
       }
       tds += `<td style="text-align:center;"><input type="checkbox" data-absent-entity="${ent}" ${isAbsent?'checked':''} title="Marcar que ${ent} faltou hoje" /></td>`;
       tds += `<td style="text-align:center;">${isDeactivatable ? `<input type="checkbox" data-deactivate-entity="${ent}" ${isDeactivatedToday?'checked':''} title="Marcar que ${ent} saiu da operação a partir de ${registoSel.date.split('-').reverse().join('/')} — deixa de aparecer nos dias/meses seguintes, mas os dados anteriores mantêm-se" />` : '—'}</td>`;
-      tds += `<td><button class="de-btn danger" data-quick-remove-entity="${ent}" title="Remover ${ent} da lista ativa (dados históricos mantidos)">✕</button> <button class="de-btn danger" data-wipe-entity-reg="${ent}" title="Apagar PERMANENTEMENTE os dados registados desta entidade">🗑</button></td>`;
+      tds += `<td><button class="de-btn danger" data-quick-remove-entity="${ent}" title="Remover ${ent} da lista ativa (dados históricos mantidos)">${ICONS.x}</button> <button class="de-btn danger" data-wipe-entity-reg="${ent}" title="Apagar PERMANENTEMENTE os dados registados desta entidade">${ICONS.trash}</button></td>`;
       tr.innerHTML = tds;
       tbody.appendChild(tr);
     });
@@ -1738,7 +1764,7 @@ function renderRegisto(){
     card.querySelectorAll('[data-quick-remove-entity]').forEach(btn=>{
       btn.onclick = async ()=>{
         const name = btn.dataset.quickRemoveEntity;
-        if (!confirm(`Remover "${name}" de ${op.name}? Os registos históricos deste ${op.repeating.entityLabel.toLowerCase()} não são apagados, só deixa de aparecer para novos registos. Para apagar os dados de vez, usa o botão 🗑 ao lado.`)) return;
+        if (!confirm(`Remover "${name}" de ${op.name}? Os registos históricos deste ${op.repeating.entityLabel.toLowerCase()} não são apagados, só deixa de aparecer para novos registos. Para apagar os dados de vez, usa o botão de lixo ao lado.`)) return;
         const idx = op.repeating.entities.indexOf(name);
         if (idx>-1) op.repeating.entities.splice(idx,1);
         if (op.repeating.entityMeta) delete op.repeating.entityMeta[name];
@@ -1772,7 +1798,7 @@ function renderRegisto(){
           delete registoDrafts[op.id+'|'+d];
         });
         await saveRecords(op.id, recs);
-        await logEdit('🗑 Apagou dados de entidade (Registo)', op.name + ' — "' + entityName + '" — ' + affectedDates.length + ' dia(s) entre ' + from + ' e ' + to);
+        await logEdit('Apagou dados de entidade (Registo)', op.name + ' — "' + entityName + '" — ' + affectedDates.length + ' dia(s) entre ' + from + ' e ' + to);
         toast(`Dados de "${entityName}" apagados em ${affectedDates.length} dia(s)`);
         render();
       };
@@ -1843,7 +1869,7 @@ function renderRegisto(){
   const saveRow = document.createElement('div');
   saveRow.style.cssText = 'margin-top:22px; position:sticky; bottom:0; padding:14px 0 4px 0; background:linear-gradient(180deg, transparent, var(--navy) 30%);';
   saveRow.innerHTML = `
-    <button class="de-btn" id="reg-save" style="width:100%; padding:14px; font-size:14.5px; letter-spacing:0.02em;">✓ Guardar registo</button>
+    <button class="de-btn" id="reg-save" style="width:100%; padding:14px; font-size:14.5px; letter-spacing:0.02em;">${ICONS.check} Guardar registo</button>
     <div id="reg-autosave-status" style="text-align:center; font-size:11.5px; margin-top:7px; color:var(--text-faint); font-family:var(--font-mono);">${registoDrafts[draftKey()] ? '● Alterações por guardar…' : ''}</div>
   `;
   wrap.appendChild(saveRow);
@@ -1853,7 +1879,7 @@ function renderRegisto(){
 
   function setAutosaveStatus(text, color){
     const el = document.getElementById('reg-autosave-status');
-    if (el){ el.textContent = text || ''; el.style.color = color || 'var(--text-faint)'; }
+    if (el){ el.innerHTML = text || ''; el.style.color = color || 'var(--text-faint)'; }
   }
 
   // Constrói o registo do dia a partir do estado atual do formulário —
@@ -1900,7 +1926,7 @@ function renderRegisto(){
     recs[registoSel.date] = record;
     const ok = await saveRecords(op.id, recs);
     if (!ok){
-      if (silent) setAutosaveStatus('⚠️ Falha no auto-save — tenta guardar manualmente', 'var(--red)');
+      if (silent) setAutosaveStatus(ICONS.warning+' Falha no auto-save — tenta guardar manualmente', 'var(--red)');
       return false;
     }
     delete registoDrafts[draftKey()];
@@ -1910,7 +1936,7 @@ function renderRegisto(){
     lastSavedVerify = { opId: op.id, date: registoSel.date };
     if (silent){
       const now = new Date();
-      setAutosaveStatus('✓ Guardado automaticamente às ' + String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0'), 'var(--green)');
+      setAutosaveStatus(ICONS.check+' Guardado automaticamente às ' + String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0'), 'var(--green)');
     } else {
       toast(`Guardado: ${op.name} — ${registoSel.date} — Entregues: ${fmt(savedEntregues)} · Total: ${fmt(savedTotal)}`);
       render();
@@ -2398,7 +2424,7 @@ function renderAnual(wrap){
   if (last && last.isProjected){
     const note = document.createElement('div');
     note.style.cssText = 'font-size:12px;color:var(--text-faint);margin:-10px 0 16px 2px;';
-    note.innerHTML = `📊 ${monthName(last.m)} ainda está em curso (${last.dias} de ${last.totalDaysInMonth} dias registados). O valor de tendência e o comparativo abaixo usam uma projeção de fecho (${fmt(last.projectedEnt)} entregues estimadas) em vez do total parcial (${fmt(last.ent)}), para não distorcer a comparação com meses já fechados.`;
+    note.innerHTML = `${ICONS.chart} ${monthName(last.m)} ainda está em curso (${last.dias} de ${last.totalDaysInMonth} dias registados). O valor de tendência e o comparativo abaixo usam uma projeção de fecho (${fmt(last.projectedEnt)} entregues estimadas) em vez do total parcial (${fmt(last.ent)}), para não distorcer a comparação com meses já fechados.`;
     wrap.appendChild(note);
   }
 
@@ -2423,7 +2449,7 @@ function renderAnual(wrap){
       }
     }
     const entLabel = mo.isProjected ? `${fmt(mo.ent)} <span style="color:var(--text-faint);font-size:11px;">(${fmt(mo.projectedEnt)} projetado)</span>` : fmt(mo.ent);
-    rows += `<tr><td class="ent-name">${monthName(mo.m)}${mo.isProjected?' <span title="Mês em curso — comparação usa projeção de fecho" style="cursor:help;">📊</span>':''}</td><td class="computed-val">${entLabel}</td><td class="computed-val">${mo.edr!==null?edrHtml(mo.edr):'—'}</td><td>${delta||'—'}</td></tr>`;
+    rows += `<tr><td class="ent-name">${monthName(mo.m)}${mo.isProjected?' <span title="Mês em curso — comparação usa projeção de fecho" style="cursor:help;">${ICONS.chart}</span>':''}</td><td class="computed-val">${entLabel}</td><td class="computed-val">${mo.edr!==null?edrHtml(mo.edr):'—'}</td><td>${delta||'—'}</td></tr>`;
   });
   table.innerHTML = `<thead><tr><th>Mês</th><th>Entregues</th><th>EDR%</th><th>vs mês anterior</th></tr></thead><tbody>${rows||'<tr><td colspan="4" style="text-align:center;color:var(--text-faint);padding:20px;">Sem dados.</td></tr>'}</tbody>`;
   tableWrap.appendChild(table);
@@ -2632,7 +2658,7 @@ function renderPorCliente(wrap){
   const records = STATE.recordsCache[op.id] || {};
   const allDates = Object.keys(records).sort();
   if (!allDates.length){
-    wrap.innerHTML += `<div class="de-empty"><div class="big">📊</div>Ainda sem dados registados para ${op.name}.</div>`;
+    wrap.innerHTML += `<div class="de-empty"><div class="big">${ICONS.chartBig}</div>Ainda sem dados registados para ${op.name}.</div>`;
     return;
   }
 
@@ -2689,7 +2715,7 @@ function renderPorCliente(wrap){
     <div class="de-kpi"><div class="label">EDR histórico</div><div class="value">${overallStats.edr!==null?edrHtml(overallStats.edr):'—'}</div></div>
     <div class="de-kpi"><div class="label">Melhor dia da semana</div><div class="value" style="font-size:16px;">${bestWd?bestWd.w+' ('+edrHtml(bestWd.edr)+')':'—'}</div></div>
     <div class="de-kpi"><div class="label">Pior dia da semana</div><div class="value" style="font-size:16px;">${worstWd?worstWd.w+' ('+edrHtml(worstWd.edr)+')':'—'}</div></div>
-    <div class="de-kpi"><div class="label">Vs. mês anterior${curProj.isProjected?' <span title="Mês em curso — projeção de fecho com base nos '+curProj.dias+' dias já registados" style="cursor:help;">📊</span>':''}</div><div class="value ${momChange>0?'green':momChange<0?'red':''}">${momChange!==null?(momChange>=0?'+':'')+pct(momChange):'—'}</div></div>
+    <div class="de-kpi"><div class="label">Vs. mês anterior${curProj.isProjected?' <span title="Mês em curso — projeção de fecho com base nos '+curProj.dias+' dias já registados" style="cursor:help;">${ICONS.chart}</span>':''}</div><div class="value ${momChange>0?'green':momChange<0?'red':''}">${momChange!==null?(momChange>=0?'+':'')+pct(momChange):'—'}</div></div>
   `;
   wrap.appendChild(kpis);
 
@@ -2819,14 +2845,14 @@ let historicoSearch = '';
 let historicoFilterUser = 'all';
 
 function actionIcon(action){
-  if (action.includes('Registo guardado')) return '📝';
-  if (action.includes('falta') || action.includes('Falta') || action.includes('ausente')) return '📭';
-  if (action.includes('removid')) return '🗑️';
-  if (action.includes('renomead') || action.includes('Renomead')) return '✎';
-  if (action.includes('criad') || action.includes('adicionad')) return '➕';
-  if (action.includes('importad')) return '📥';
-  if (action.includes('ativ') || action.includes('Ativ')) return '🔁';
-  return '⚙️';
+  if (action.includes('Registo guardado')) return ICONS.note;
+  if (action.includes('falta') || action.includes('Falta') || action.includes('ausente')) return ICONS.inbox2;
+  if (action.includes('removid')) return ICONS.trash;
+  if (action.includes('renomead') || action.includes('Renomead')) return ICONS.pencil;
+  if (action.includes('criad') || action.includes('adicionad')) return ICONS.plus;
+  if (action.includes('importad')) return ICONS.importIcon;
+  if (action.includes('ativ') || action.includes('Ativ')) return ICONS.repeat;
+  return ICONS.gear;
 }
 
 function renderHistorico(){
@@ -2849,7 +2875,7 @@ function renderHistorico(){
         ${users.map(u=>`<option value="${u}" ${historicoFilterUser===u?'selected':''}>${u}</option>`).join('')}
       </select>
     </div>
-    <button class="de-btn ghost small" id="hist-refresh">🔄 Atualizar</button>
+    <button class="de-btn ghost small" id="hist-refresh">${ICONS.refresh} Atualizar</button>
   `;
   wrap.appendChild(header);
 
@@ -2925,7 +2951,7 @@ function renderHistorico(){
       STATE.auditLog = snap.docs.map(d=>d.data()).reverse();
       setConnStatus(true);
     } catch(e){ console.error(e); setConnStatus(false); }
-    btn.textContent = '🔄 Atualizar'; btn.disabled = false;
+    btn.innerHTML = ICONS.refresh+' Atualizar'; btn.disabled = false;
     render();
   };
 }
@@ -3183,7 +3209,7 @@ function renderOpEditor(op){
   (op.fields||[]).forEach((f,idx)=>{
     const tag = document.createElement('span');
     tag.className = 'de-tag';
-    tag.innerHTML = `${f.label}${f.role?' <span style="color:var(--text-faint)">('+f.role+')</span>':''} <button data-remove-fixed="${idx}">✕</button>`;
+    tag.innerHTML = `${f.label}${f.role?' <span style="color:var(--text-faint)">('+f.role+')</span>':''} <button data-remove-fixed="${idx}">${ICONS.x}</button>`;
     fixedTags.appendChild(tag);
   });
   fixedSection.appendChild(fixedTags);
@@ -3230,7 +3256,7 @@ function renderOpEditor(op){
       (op.driverField.list||[]).forEach((d,idx)=>{
         const tag = document.createElement('span');
         tag.className = 'de-tag';
-        tag.innerHTML = `${d} <button data-wipe-driver="${idx}" title="Apagar dados registados deste motorista num intervalo de datas" style="color:var(--text-faint);">🗑</button> <button data-remove-driver="${idx}">✕</button>`;
+        tag.innerHTML = `${d} <button data-wipe-driver="${idx}" title="Apagar dados registados deste motorista num intervalo de datas" style="color:var(--text-faint);">${ICONS.trash}</button> <button data-remove-driver="${idx}">${ICONS.x}</button>`;
         dList.appendChild(tag);
       });
       dBox.querySelector('#add-driver').onclick = async ()=>{
@@ -3271,7 +3297,7 @@ function renderOpEditor(op){
           if (typed !== 'APAGAR'){ toast('Não confirmado — nada foi apagado'); return; }
           affectedDates.forEach(d=>{ delete recs[d]; delete registoDrafts[op.id+'|'+d]; });
           await saveRecords(op.id, recs);
-          await logEdit('🗑 Apagou registos de motorista', op.name + ' — "' + driverName + '" — ' + affectedDates.length + ' dia(s) entre ' + from + ' e ' + to);
+          await logEdit('Apagou registos de motorista', op.name + ' — "' + driverName + '" — ' + affectedDates.length + ' dia(s) entre ' + from + ' e ' + to);
           toast(`Registos de "${driverName}" apagados em ${affectedDates.length} dia(s)`);
           render();
         };
@@ -3329,8 +3355,8 @@ function renderOpEditor(op){
       row.innerHTML = `
         <input type="text" data-ent-name-idx="${idx}" value="${e}" style="flex:1;max-width:220px;" />
         <input type="text" data-ent-loja-idx="${idx}" value="${meta.loja||''}" placeholder="loja / localização" style="max-width:160px;" />
-        <button class="de-btn ghost small" data-wipe-entity="${idx}" title="Apagar permanentemente os registos já introduzidos para esta entidade num intervalo de datas — a entidade continua na lista, só os dados errados são removidos.">🗑 Apagar dados</button>
-        <button class="de-btn danger" data-remove-entity="${idx}">✕</button>
+        <button class="de-btn ghost small" data-wipe-entity="${idx}" title="Apagar permanentemente os registos já introduzidos para esta entidade num intervalo de datas — a entidade continua na lista, só os dados errados são removidos.">${ICONS.trash} Apagar dados</button>
+        <button class="de-btn danger" data-remove-entity="${idx}">${ICONS.x}</button>
       `;
       entEditable.appendChild(row);
     });
@@ -3356,7 +3382,7 @@ function renderOpEditor(op){
         if (typed !== 'APAGAR'){ toast('Não confirmado — nada foi apagado'); return; }
         affectedDates.forEach(d=>{ delete recs[d].entities[entityName]; delete registoDrafts[op.id+'|'+d]; });
         await saveRecords(op.id, recs);
-        await logEdit('🗑 Apagou dados de entidade', op.name + ' — "' + entityName + '" — ' + affectedDates.length + ' dia(s) entre ' + from + ' e ' + to);
+        await logEdit('Apagou dados de entidade', op.name + ' — "' + entityName + '" — ' + affectedDates.length + ' dia(s) entre ' + from + ' e ' + to);
         toast(`Dados de "${entityName}" apagados em ${affectedDates.length} dia(s)`);
         render();
       };
@@ -3366,7 +3392,7 @@ function renderOpEditor(op){
     op.repeating.fields.forEach((f,idx)=>{
       const tag = document.createElement('span');
       tag.className = 'de-tag';
-      tag.innerHTML = `${f.label}${f.role?' <span style="color:var(--text-faint)">('+f.role+')</span>':''} <button data-remove-repfield="${idx}">✕</button>`;
+      tag.innerHTML = `${f.label}${f.role?' <span style="color:var(--text-faint)">('+f.role+')</span>':''} <button data-remove-repfield="${idx}">${ICONS.x}</button>`;
       fieldTags.appendChild(tag);
     });
 
@@ -3657,7 +3683,7 @@ function applyTheme(theme){
   const root = document.getElementById('de-app-root');
   if (root) root.dataset.theme = theme;
   const btn = document.getElementById('de-theme-toggle');
-  if (btn) btn.textContent = theme==='light' ? '☀️' : '🌙';
+  if (btn) btn.innerHTML = theme==='light' ? ICONS.sun : ICONS.moon;
 }
 
 function updateLiveClock(){
@@ -3732,7 +3758,7 @@ async function init(){
     setConnStatus(false);
     const body = document.getElementById('de-body');
     body.innerHTML = `<div class="de-empty">
-      <div class="big">⚠️</div>
+      <div class="big">${ICONS.warning}</div>
       Ocorreu um erro a carregar os dados.<br/>
       <span style="font-family:var(--font-mono);font-size:11px;color:var(--text-faint);">${(err && err.message) || err}</span><br/><br/>
       <button class="de-btn ghost small" onclick="location.reload()">Tentar novamente</button>
@@ -3745,7 +3771,7 @@ setTimeout(()=>{
   const body = document.getElementById('de-body');
   if (body && body.querySelector('.de-loading')){
     body.innerHTML = `<div class="de-empty">
-      <div class="big">⏳</div>
+      <div class="big"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 22h14M5 2h14M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22M17 2v4.172a2 2 0 0 1-.586 1.414L12 12l-4.414-4.414A2 2 0 0 1 7 6.172V2"/></svg></div>
       A app está a demorar mais que o normal a iniciar.<br/>
       <span style="font-family:var(--font-mono);font-size:11px;color:var(--text-faint);">Tenta recarregar a página, ou verifica se o Firestore está criado e as regras publicadas.</span><br/><br/>
       <button class="de-btn ghost small" onclick="location.reload()">Recarregar</button>
