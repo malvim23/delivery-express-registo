@@ -3233,7 +3233,7 @@ function renderPesos(){
 
   const reportRowsHtml = reportRowsData.map(r=>{
     if (!r.hasData){
-      return `<tr><td>${r.d}</td><td style="color:var(--text-faint);">${diaSemanaLabel(r.dow)}</td><td colspan="12"></td></tr>`;
+      return `<tr><td>${r.d}</td><td style="color:var(--text-faint);">${diaSemanaLabel(r.dow)}</td><td colspan="13"></td></tr>`;
     }
     return `<tr>
       <td>${r.d}</td>
@@ -3250,6 +3250,7 @@ function renderPesos(){
       <td>${edrHtml(r.edr)}</td>
       <td style="color:var(--green);font-weight:700;">${r.b1||'—'}</td>
       <td style="color:var(--blue);font-weight:700;">${r.b2||'—'}</td>
+      <td style="font-weight:800;">${(r.b1+r.b2)||'—'}</td>
     </tr>`;
   }).join('');
 
@@ -3269,7 +3270,7 @@ function renderPesos(){
       <thead><tr>
         <th>Dia</th><th>Dia Semana</th><th>Encomendas</th><th>Entregues</th><th>Não Entregues</th>
         <th>Cancelada</th><th>Ausente</th><th>Recusado</th><th>Falhada DE</th><th>Morada Errada</th>
-        <th>KMS</th><th>EDR%</th><th>0 - 30</th><th>31 - 60</th>
+        <th>KMS</th><th>EDR%</th><th>0 - 30</th><th>31 - 60</th><th>Total</th>
       </tr></thead>
       <tbody>${reportRowsHtml}</tbody>
       <tfoot>
@@ -3281,6 +3282,7 @@ function renderPesos(){
           <td>${fmt(rTotals.falh)}</td><td>${fmt(rTotals.mor)}</td><td>${fmt(rTotals.kms)}</td>
           <td>${edrHtml(rEdrTotal)}</td>
           <td style="color:var(--green);">${rTotals.b1}</td><td style="color:var(--blue);">${rTotals.b2}</td>
+          <td>${rTotals.b1 + rTotals.b2}</td>
         </tr>
         <tr style="font-weight:800;">
           <td colspan="2">MÉDIA</td>
@@ -3290,6 +3292,7 @@ function renderPesos(){
           <td>${avg(rTotals.falh)}</td><td>${avg(rTotals.mor)}</td><td>${avg(rTotals.kms)}</td>
           <td>—</td>
           <td style="color:var(--green);">${avg(rTotals.b1)}</td><td style="color:var(--blue);">${avg(rTotals.b2)}</td>
+          <td>${avg(rTotals.b1 + rTotals.b2)}</td>
         </tr>
       </tfoot>
     </table>
@@ -3301,11 +3304,11 @@ function renderPesos(){
   body.appendChild(wrap);
 
   document.getElementById('pesos-report-export').onclick = ()=>{
-    let csv = 'Dia;Dia Semana;Encomendas;Entregues;Não Entregues;Cancelada;Ausente;Recusado;Falhada DE;Morada Errada;KMS;EDR%;0-30;31-60\n';
+    let csv = 'Dia;Dia Semana;Encomendas;Entregues;Não Entregues;Cancelada;Ausente;Recusado;Falhada DE;Morada Errada;KMS;EDR%;0-30;31-60;Total\n';
     reportRowsData.forEach(r=>{
-      if (!r.hasData){ csv += `${r.d};${diaSemanaLabel(r.dow)};;;;;;;;;;;;\n`; return; }
+      if (!r.hasData){ csv += `${r.d};${diaSemanaLabel(r.dow)};;;;;;;;;;;;;\n`; return; }
       const edrPct = r.edr!==null ? (Math.round(r.edr*1000)/10)+'%' : '';
-      csv += `${r.d};${diaSemanaLabel(r.dow)};${r.enc};${r.ent};${r.nao};${r.canc};${r.aus};${r.recu};${r.falh};${r.mor};${r.kms};${edrPct};${r.b1};${r.b2}\n`;
+      csv += `${r.d};${diaSemanaLabel(r.dow)};${r.enc};${r.ent};${r.nao};${r.canc};${r.aus};${r.recu};${r.falh};${r.mor};${r.kms};${edrPct};${r.b1};${r.b2};${r.b1+r.b2}\n`;
     });
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
