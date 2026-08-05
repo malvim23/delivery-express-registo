@@ -2204,7 +2204,7 @@ function renderHeroOverview(){
   const isCurrentMonth = heroSel.mode==='month' && heroSel.month===(new Date().getMonth()+1) && heroSel.year===2026;
 
   const periodDates = heroSel.mode==='year'
-    ? [1,2,3,4,5,6,7].filter(m=>heroSel.year<2026 || m<=(new Date().getMonth()+1)).flatMap(m=>allDatesForMonth(heroSel.year,m))
+    ? [1,2,3,4,5,6,7,8,9,10,11,12].filter(m=>heroSel.year<2026 || m<=(new Date().getMonth()+1)).flatMap(m=>allDatesForMonth(heroSel.year,m))
     : allDatesForMonth(heroSel.year, heroSel.month);
   const validDates = periodDates.filter(d=>d<=todayISO());
 
@@ -2238,7 +2238,7 @@ function renderHeroOverview(){
           <option value="year" ${heroSel.mode==='year'?'selected':''}>Ano inteiro</option>
         </select>
         ${heroSel.mode==='month' ? `<select id="hero-month" style="background:var(--navy);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:7px;font-size:12px;font-weight:600;">
-          ${[1,2,3,4,5,6,7].map(m=>`<option value="${m}" ${heroSel.month===m?'selected':''}>${monthName(m)}</option>`).join('')}
+          ${[1,2,3,4,5,6,7,8,9,10,11,12].map(m=>`<option value="${m}" ${heroSel.month===m?'selected':''}>${monthName(m)}</option>`).join('')}
         </select>` : ''}
         <select id="hero-year" style="background:var(--navy);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:7px;font-size:12px;font-weight:600;">
           <option value="2026" ${heroSel.year===2026?'selected':''}>2026</option>
@@ -2280,7 +2280,7 @@ function renderMensal(wrap){
   const opts = opDropdownOptions();
   controls.innerHTML = `
     <div class="de-field"><label>Operação</label><select id="an-op"><option value="all">Todas</option>${opts}</select></div>
-    <div class="de-field"><label>Mês</label><select id="an-month">${[1,2,3,4,5,6,7].map(m=>`<option value="${m}">${monthName(m)}</option>`).join('')}</select></div>
+    <div class="de-field"><label>Mês</label><select id="an-month">${[1,2,3,4,5,6,7,8,9,10,11,12].map(m=>`<option value="${m}">${monthName(m)}</option>`).join('')}</select></div>
     <div class="de-field" id="an-mensal-loja-field"><label>Loja</label><select id="an-mensal-loja"></select></div>
     <div class="de-field" id="an-mensal-entity-field"><label id="an-mensal-entity-label">Motorista</label><select id="an-mensal-entity"></select></div>
   `;
