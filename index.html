@@ -340,6 +340,7 @@
     <div class="de-header-right">
       <div class="de-live-clock" id="de-live-clock"></div>
       <div class="de-conn-status" id="de-conn-status"><svg viewBox="0 0 24 24" width="7" height="7" fill="currentColor" style="vertical-align:1px;"><circle cx="12" cy="12" r="10"/></svg> A ligar…</div>
+      <button class="de-theme-toggle" id="de-export-all-btn" title="Exportar todos os dados (todos os clientes, incl. inativos) para análise no Claude"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg></button>
       <button class="de-theme-toggle" id="de-user-name-btn" title="Alterar o teu nome de utilizador"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></button>
       <button class="de-theme-toggle" id="de-theme-toggle" title="Alternar modo claro/escuro"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"/></svg></button>
     </div>
@@ -4035,6 +4036,124 @@ async function getUserName(){
   return name;
 }
 
+// ============================================================
+// EXPORTAÇÃO COMPLETA DE DADOS (TODOS OS CLIENTES, INCL. INATIVOS)
+// ------------------------------------------------------------
+// Gera um ficheiro Excel com formato "longo" (uma linha por
+// cliente + data + campo) para ser reenviado ao Claude e permitir
+// análises sobre qualquer período, incluindo clientes já inativos.
+// ============================================================
+const DIAS_SEMANA_PT = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
+
+function collectOperationsMetaForExport(){
+  return STATE.operations.map(op=>({
+    'Cliente': op.name,
+    'ID Interno': op.id,
+    'Setor': op.sector || '',
+    'Ativo': op.active ? 'Sim' : 'Não',
+    'Estrutura': op.repeating ? `Por ${op.repeating.entityLabel}` : 'Campos fixos',
+    'Entidades (se aplicável)': op.repeating ? (op.repeating.entities||[]).join(', ') : '',
+    'Campos Fixos': (op.fields||[]).map(f=>f.label).join(', '),
+    'Campos por Entidade': op.repeating ? (op.repeating.fields||[]).map(f=>f.label).join(', ') : '',
+    'Tem Motorista Fixo': (op.driverField && op.driverField.enabled) ? 'Sim' : 'Não',
+    'Dias de Trabalho': (op.workDays||[]).map(d=>DIAS_SEMANA_PT[d]).join(', '),
+  }));
+}
+
+function collectDailyDataForExport(){
+  const rows = [];
+  STATE.operations.forEach(op=>{
+    const records = STATE.recordsCache[op.id] || {};
+    const fixedFieldMap = {};
+    (op.fields||[]).forEach(f=>{ fixedFieldMap[f.key] = f.label; });
+    const repFieldMap = {};
+    if (op.repeating) (op.repeating.fields||[]).forEach(f=>{ repFieldMap[f.key] = f.label; });
+
+    Object.keys(records).sort().forEach(dateKey=>{
+      const rec = records[dateKey];
+      if (!rec) return;
+      const isSummary = !!rec.monthlySummary;
+      const tipoRegisto = rec.noOperation ? 'Sem operação' : (isSummary ? 'Resumo mensal' : 'Diário');
+      const periodo = isSummary ? (rec.summaryMonth || dateKey.slice(0,7)) : dateKey;
+      const ano = periodo.slice(0,4);
+      const mes = periodo.slice(5,7);
+
+      const baseRow = ()=>({
+        'Cliente': op.name,
+        'Setor': op.sector || '',
+        'Ativo': op.active ? 'Sim' : 'Não',
+        'Ano': ano,
+        'Mês': mes,
+        'Data/Período': periodo,
+        'Tipo de Registo': tipoRegisto,
+      });
+
+      if (rec.noOperation){
+        rows.push({ ...baseRow(), 'Entidade': '', 'Motorista': '', 'Campo': '(sem operação neste dia)', 'Valor': '' });
+      }
+
+      Object.entries(rec.fixed || {}).forEach(([k,v])=>{
+        if (v===undefined || v===null || v==='') return;
+        rows.push({ ...baseRow(), 'Entidade': '', 'Motorista': rec.motorista || '', 'Campo': fixedFieldMap[k] || k, 'Valor': v });
+      });
+
+      Object.entries(rec.entities || {}).forEach(([ent, ev])=>{
+        const isAbsent = rec.absences && rec.absences[ent];
+        Object.entries(ev || {}).forEach(([k,v])=>{
+          if (v===undefined || v===null || v==='') return;
+          rows.push({ ...baseRow(), 'Entidade': ent, 'Motorista': '', 'Campo': repFieldMap[k] || k, 'Valor': v });
+        });
+        if (isAbsent){
+          rows.push({ ...baseRow(), 'Entidade': ent, 'Motorista': '', 'Campo': 'Ausência', 'Valor': 'Sim' });
+        }
+      });
+    });
+  });
+  return rows;
+}
+
+function collectPesosDataForExport(){
+  const rows = [];
+  (typeof PESOS_OPS !== 'undefined' ? PESOS_OPS : []).forEach(opId=>{
+    const op = STATE.operations.find(o=>o.id===opId);
+    const entries = STATE.pesosCache[opId] || {};
+    Object.keys(entries).sort().forEach(dateKey=>{
+      (entries[dateKey] || []).forEach(peso=>{
+        rows.push({ 'Cliente': op ? op.name : opId, 'Data': dateKey, 'Peso (kg)': peso });
+      });
+    });
+  });
+  return rows;
+}
+
+function exportAllDataForAnalysis(){
+  try {
+    const opsMeta = collectOperationsMetaForExport();
+    const dailyRows = collectDailyDataForExport();
+    const pesosRows = collectPesosDataForExport();
+
+    if (!dailyRows.length){
+      toast(ICONS.warning + ' Ainda não há dados registados para exportar');
+      return;
+    }
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(opsMeta), 'Clientes');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(dailyRows), 'Dados');
+    if (pesosRows.length){
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(pesosRows), 'Pesos');
+    }
+
+    const stamp = todayISO();
+    XLSX.writeFile(wb, `delivery-express-dados-completos-${stamp}.xlsx`);
+    toast(ICONS.download + ` Exportação concluída (${dailyRows.length} linhas) — envia o ficheiro aqui no Claude`);
+    logEdit('Exportação de dados', `Exportou dados completos de ${STATE.operations.length} clientes (${dailyRows.length} linhas)`);
+  } catch(e){
+    console.error('Erro ao exportar dados completos', e);
+    toast(ICONS.warning + ' Erro ao exportar — verifica a consola');
+  }
+}
+
 function applyTheme(theme){
   currentTheme = theme;
   const root = document.getElementById('de-app-root');
@@ -4065,6 +4184,8 @@ async function init(){
       saveTheme(next);
       render();
     };
+
+    document.getElementById('de-export-all-btn').onclick = ()=>{ exportAllDataForAnalysis(); };
 
     document.getElementById('de-user-name-btn').onclick = async ()=>{
       const atual = await getUserName();
