@@ -666,8 +666,18 @@ function isEditingNow(){
   return !!(active && root && root.contains(active) && (active.tagName==='INPUT' || active.tagName==='TEXTAREA' || active.isContentEditable));
 }
 
+// Contador de escritas de configuração em curso. Enquanto > 0, o listener
+// em tempo real de 'appdata/config' ignora snapshots recebidos, para não
+// sobrepor com dados desatualizados uma alteração local que ainda está a
+// ser gravada (ex.: alguém a meio de "adicionar motorista" ou "renomear").
+// Corrige o bug em que adicionar/editar motorista às vezes "não fazia
+// efeito" — o snapshot antigo chegava entretanto e substituía STATE.operations
+// pela versão sem a alteração, imediatamente antes do render() final.
+let pendingConfigWrites = 0;
+
 async function saveOperations(ops){
   STATE.operations = ops;
+  pendingConfigWrites++;
   try {
     await db.collection('appdata').doc('config').set({
       operations: ops,
@@ -682,6 +692,8 @@ async function saveOperations(ops){
     setConnStatus(false);
     toast(ICONS.warning+' Não foi possível guardar — verifica a ligação à internet');
     return false;
+  } finally {
+    pendingConfigWrites = Math.max(0, pendingConfigWrites - 1);
   }
 }
 
@@ -849,6 +861,13 @@ function ensurePesosListeners(){
 
 function setupRealtimeListeners(){
   db.collection('appdata').doc('config').onSnapshot(doc=>{
+    if (pendingConfigWrites > 0){
+      // Há uma gravação local em curso (ex.: acabámos de adicionar/renomear
+      // um motorista) — ignora este snapshot para não a sobrepor. Assim que
+      // a gravação terminar, o próprio código que a fez trata do render().
+      setConnStatus(true);
+      return;
+    }
     if (doc.exists){
       const data = doc.data();
       STATE.operations = migrateOperations(data.operations && data.operations.length ? data.operations : defaultOperations());
@@ -1061,6 +1080,50 @@ function isEntityActiveForDate(op, ent, dateStr){
   return true;
 }
 
+// Move os dados guardados sob "oldName" (entities e absences, em TODOS os
+// dias já gravados) para "newName". Isto é o que torna o "Renomear" um
+// verdadeiro renomear: o motorista não fica com o nome antigo "preso" a
+// dados antigos (o que fazia parecer que tinha sido desativado) — passa a
+// ter um único histórico contínuo sob o nome novo.
+function migrateEntityDataAcrossRecords(opId, oldName, newName){
+  const recs = STATE.recordsCache[opId] || {};
+  let touched = false;
+  Object.keys(recs).forEach(date=>{
+    const rec = recs[date];
+    if (!rec) return;
+    if (rec.entities && Object.prototype.hasOwnProperty.call(rec.entities, oldName)){
+      const oldVals = rec.entities[oldName];
+      rec.entities[newName] = rec.entities[newName] ? { ...oldVals, ...rec.entities[newName] } : oldVals;
+      delete rec.entities[oldName];
+      touched = true;
+    }
+    if (rec.absences && Object.prototype.hasOwnProperty.call(rec.absences, oldName)){
+      rec.absences[newName] = rec.absences[oldName];
+      delete rec.absences[oldName];
+      touched = true;
+    }
+  });
+  return touched ? recs : null;
+}
+
+// Migra também o rascunho (dia ainda não guardado) que possa estar aberto
+// para a mesma operação, para não perder o que a pessoa estava a preencher.
+function migrateEntityDataInDrafts(opId, oldName, newName){
+  Object.keys(registoDrafts).forEach(key=>{
+    if (!key.startsWith(opId+'|')) return;
+    const d = registoDrafts[key];
+    if (!d) return;
+    if (d.entities && Object.prototype.hasOwnProperty.call(d.entities, oldName)){
+      d.entities[newName] = d.entities[newName] ? { ...d.entities[oldName], ...d.entities[newName] } : d.entities[oldName];
+      delete d.entities[oldName];
+    }
+    if (d.absences && Object.prototype.hasOwnProperty.call(d.absences, oldName)){
+      d.absences[newName] = d.absences[oldName];
+      delete d.absences[oldName];
+    }
+  });
+}
+
 function isEntityCurrentlyInactive(op, ent){
   const meta = (op.repeating.entityMeta||{})[ent] || {};
   const periods = meta.inactivePeriods || (meta.inactiveFrom ? [{ from: addDays(meta.inactiveFrom,1), to: null }] : []);
@@ -1099,6 +1162,7 @@ function renderTabs(){
 let registoSel = { opId: null, date: todayISO() };
 let registoMonthlyOpen = false;
 let inactiveListOpen = false;
+let renameLogOpen = false;
 let registoDrafts = {};
 let lastSavedVerify = null;
 function draftKey(){ return registoSel.opId+'|'+registoSel.date; }
@@ -1731,6 +1795,64 @@ function renderRegisto(){
       });
     }
 
+    const renameLog = op.repeating.renameLog || [];
+    if (renameLog.length){
+      const renameCard = document.createElement('div');
+      renameCard.className = 'de-card';
+      renameCard.innerHTML = `<div class="de-flex-between" style="margin-bottom:0;">
+        <h3 style="margin-bottom:0;">Alterações de nome recentes (${renameLog.length})</h3>
+        <button class="de-btn ghost small" id="reg-toggle-rename-log">${renameLogOpen?'▲ Minimizar':'▼ Mostrar'}</button>
+      </div>`;
+      if (renameLogOpen){
+        const list = document.createElement('div');
+        list.style.cssText = 'display:flex;flex-direction:column;gap:8px;margin-top:12px;';
+        renameLog.forEach((entry,i)=>{
+          const canRevert = op.repeating.entities.includes(entry.to) && !op.repeating.entities.includes(entry.from);
+          const row = document.createElement('div');
+          row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 12px;background:var(--navy);border:1px solid var(--border);border-radius:8px;';
+          const dataFmt = entry.ts ? new Date(entry.ts).toLocaleString('pt-PT') : '';
+          row.innerHTML = `<span>${entry.from} → <strong>${entry.to}</strong> <span class="de-badge" style="margin-left:4px;color:var(--text-faint);">${dataFmt}</span></span>
+            ${canRevert ? `<button class="de-btn ghost small" data-revert-rename="${i}">↺ Reverter</button>` : `<span style="color:var(--text-faint);font-size:12px;">não é possível reverter</span>`}`;
+          list.appendChild(row);
+        });
+        renameCard.appendChild(list);
+      }
+      wrap.appendChild(renameCard);
+      renameCard.querySelector('#reg-toggle-rename-log').onclick = ()=>{ renameLogOpen = !renameLogOpen; render(); };
+      renameCard.querySelectorAll('[data-revert-rename]').forEach(btn=>{
+        btn.onclick = async (e)=>{
+          e.preventDefault();
+          const logIdx = Number(btn.dataset.revertRename);
+          const entry = (op.repeating.renameLog||[])[logIdx];
+          if (!entry) return;
+          const currentName = entry.to, targetName = entry.from;
+          if (!op.repeating.entities.includes(currentName)){
+            toast(`Não é possível reverter — "${currentName}" já não está na lista atual`);
+            return;
+          }
+          if (op.repeating.entities.includes(targetName)){
+            toast(`Já existe um(a) ${op.repeating.entityLabel.toLowerCase()} chamado(a) "${targetName}" — não é possível reverter`);
+            return;
+          }
+          if (!confirm(`Reverter "${currentName}" de volta para "${targetName}"? Os dados registados são migrados de volta.`)) return;
+          const idx = op.repeating.entities.indexOf(currentName);
+          op.repeating.entities[idx] = targetName;
+          if (op.repeating.entityMeta && op.repeating.entityMeta[currentName]){
+            op.repeating.entityMeta[targetName] = op.repeating.entityMeta[currentName];
+            delete op.repeating.entityMeta[currentName];
+          }
+          const recs = migrateEntityDataAcrossRecords(op.id, currentName, targetName);
+          migrateEntityDataInDrafts(op.id, currentName, targetName);
+          op.repeating.renameLog.splice(logIdx,1);
+          await saveOperations(STATE.operations);
+          if (recs) await saveRecords(op.id, recs);
+          await logEdit('Reverteu nome de '+op.repeating.entityLabel.toLowerCase(), op.name + ' — ' + currentName + ' → ' + targetName);
+          toast(`Revertido para ${targetName}`);
+          render();
+        };
+      });
+    }
+
     card.querySelector('#quick-add-entity-btn').onclick = async ()=>{
       const val = card.querySelector('#quick-add-entity').value.trim();
       if (!val) return;
@@ -1849,15 +1971,29 @@ function renderRegisto(){
         const oldName = btn.dataset.renameEntity;
         const novo = prompt(`Novo nome para "${oldName}":`, oldName);
         if (!novo || !novo.trim() || novo.trim()===oldName) return;
+        const newName = novo.trim();
+        if (op.repeating.entities.includes(newName)){
+          alert(`Já existe um(a) ${op.repeating.entityLabel.toLowerCase()} chamado(a) "${newName}". Escolhe outro nome.`);
+          return;
+        }
         const idx = op.repeating.entities.indexOf(oldName);
-        if (idx>-1) op.repeating.entities[idx] = novo.trim();
+        if (idx>-1) op.repeating.entities[idx] = newName;
         if (op.repeating.entityMeta && op.repeating.entityMeta[oldName]){
-          op.repeating.entityMeta[novo.trim()] = op.repeating.entityMeta[oldName];
+          op.repeating.entityMeta[newName] = op.repeating.entityMeta[oldName];
           delete op.repeating.entityMeta[oldName];
         }
+        // Migra os dados já guardados (e o rascunho de hoje, se existir) para
+        // o nome novo, para que o motorista NÃO fique a parecer desativado —
+        // continua com o mesmo histórico contínuo, só muda o nome.
+        const recs = migrateEntityDataAcrossRecords(op.id, oldName, newName);
+        migrateEntityDataInDrafts(op.id, oldName, newName);
+        if (!op.repeating.renameLog) op.repeating.renameLog = [];
+        op.repeating.renameLog.unshift({ from: oldName, to: newName, ts: new Date().toISOString() });
+        if (op.repeating.renameLog.length > 15) op.repeating.renameLog.length = 15;
         await saveOperations(STATE.operations);
-        await logEdit('Renomeou '+op.repeating.entityLabel.toLowerCase(), op.name + ' — ' + oldName + ' → ' + novo.trim());
-        toast(`Renomeado para ${novo.trim()} — os registos anteriores continuam guardados com o nome antigo`);
+        if (recs) await saveRecords(op.id, recs);
+        await logEdit('Renomeou '+op.repeating.entityLabel.toLowerCase(), op.name + ' — ' + oldName + ' → ' + newName);
+        toast(`Renomeado para ${newName} — todos os registos anteriores foram migrados, ninguém foi desativado`);
         render();
       };
     });
