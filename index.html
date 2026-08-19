@@ -1124,6 +1124,16 @@ function migrateEntityDataInDrafts(opId, oldName, newName){
   });
 }
 
+// Motoristas do campo "responsável" (driverField) só devem poder ser
+// escolhidos a partir da data em que foram adicionados — tal como acontece
+// com os motoristas em operações "por motorista" (repeating). Sem isto, um
+// motorista novo ficava logo selecionável em dias anteriores à sua criação.
+function isDriverFieldActiveForDate(op, name, dateStr){
+  const meta = op.driverField && op.driverField.meta && op.driverField.meta[name];
+  if (!meta || !meta.createdFrom) return true; // motoristas antigos, sem data registada, continuam sempre disponíveis
+  return dateStr >= meta.createdFrom;
+}
+
 function isEntityCurrentlyInactive(op, ent){
   const meta = (op.repeating.entityMeta||{})[ent] || {};
   const periods = meta.inactivePeriods || (meta.inactiveFrom ? [{ from: addDays(meta.inactiveFrom,1), to: null }] : []);
@@ -1568,12 +1578,16 @@ function renderRegisto(){
     dRow.className = 'de-row';
     dRow.style.marginBottom = '0';
     const list = op.driverField.list || [];
+    // Só mostra motoristas já ativos na data em vista, mas sem esconder o
+    // motorista já selecionado neste registo (para não desaparecer da vista
+    // um registo antigo que já o tinha escolhido).
+    const listForDate = list.filter(m=>m===formVals.motorista || isDriverFieldActiveForDate(op, m, registoSel.date));
     dRow.innerHTML = `
       <div class="de-field" style="min-width:220px;">
         <label>Motorista</label>
         <select id="reg-motorista">
           <option value="">— não especificado —</option>
-          ${list.map(m=>`<option value="${m}" ${formVals.motorista===m?'selected':''}>${m}</option>`).join('')}
+          ${listForDate.map(m=>`<option value="${m}" ${formVals.motorista===m?'selected':''}>${m}</option>`).join('')}
         </select>
       </div>
       <div class="de-field">
@@ -2188,9 +2202,11 @@ function renderRegisto(){
       const val = document.getElementById('reg-motorista-new').value.trim();
       if (!val) return;
       op.driverField.list.push(val);
+      op.driverField.meta = op.driverField.meta || {};
+      op.driverField.meta[val] = { ...(op.driverField.meta[val]||{}), createdFrom: registoSel.date };
       await saveOperations(STATE.operations);
-      await logEdit('Adicionou motorista à lista', op.name + ' — ' + val);
-      toast('Motorista adicionado: '+val);
+      await logEdit('Adicionou motorista à lista', op.name + ' — ' + val + ' — a partir de ' + registoSel.date);
+      toast(`Motorista adicionado: ${val} — disponível a partir de ${registoSel.date.split('-').reverse().join('/')}`);
       render();
     };
   }
@@ -3756,8 +3772,10 @@ function renderOpEditor(op){
         const val = dBox.querySelector('#new-driver').value.trim();
         if (!val) return;
         op.driverField.list.push(val);
+        op.driverField.meta = op.driverField.meta || {};
+        op.driverField.meta[val] = { ...(op.driverField.meta[val]||{}), createdFrom: todayISO() };
         await saveOperations(STATE.operations);
-        await logEdit('Adicionou motorista à lista', op.name + ' — ' + val);
+        await logEdit('Adicionou motorista à lista', op.name + ' — ' + val + ' — a partir de ' + todayISO());
         render();
       };
       dBox.querySelectorAll('[data-remove-driver]').forEach(btn=>{
