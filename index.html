@@ -2583,7 +2583,7 @@ function renderAnual(wrap){
   const todayMonthNum = Number(todayD.slice(5,7));
   const currentMonth = todayMonthNum;
   const months = [];
-  for (let m=1; m<=7; m++){
+  for (let m=1; m<=12; m++){
     if (2026===2026 && m>currentMonth) continue;
     const totalDaysInMonth = daysInMonth(2026, m);
     const dates = allDatesForMonth(2026, m).filter(d=>d<=todayISO());
