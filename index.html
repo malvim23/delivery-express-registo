@@ -2258,11 +2258,15 @@ function computeMissingDays(op){
 }
 
 function computeMissingDaysForMonth(op, year, month){
+  if (op.alertsEnabled===false) return [];
   const records = STATE.recordsCache[op.id] || {};
   const workDays = op.workDays || [0,1,2,3,4,5,6];
   if (op.id !== 'dhl_express' && monthHasSummary(op, year, month)) return [];
   const yesterdayISO = (()=>{ const d=new Date(); d.setDate(d.getDate()-1); return d.toISOString().slice(0,10); })();
-  const allDays = allDatesForMonth(year, month).filter(d=>d<=yesterdayISO);
+  // Nunca dispara alerta para dias anteriores à criação do cliente —
+  // sem isto, um cliente novo herdava "dias em falta" retroativos desde
+  // o início do mês/ano, mesmo antes de ter existido.
+  const allDays = allDatesForMonth(year, month).filter(d=>d<=yesterdayISO && (!op.createdFrom || d>=op.createdFrom));
   const missing = [];
   allDays.forEach(d=>{
     const dow = new Date(d+'T00:00:00').getDay();
@@ -2298,6 +2302,7 @@ function computeMissingDaysForMonth(op, year, month){
 // Varre desde o primeiro registo da operação (ou Jan/2026) até ontem,
 // mês a mês, devolvendo todos os dias em falta — usado na aba Alertas.
 function computeAllMissingDays(op){
+  if (op.alertsEnabled===false) return [];
   const records = STATE.recordsCache[op.id] || {};
   const dates = Object.keys(records);
   const today = new Date();
@@ -2306,6 +2311,13 @@ function computeAllMissingDays(op){
   if (dates.length){
     const earliest = dates.sort()[0];
     startY = Number(earliest.slice(0,4)); startM = Number(earliest.slice(5,7));
+  }
+  // Nunca varre antes da data de criação do cliente (createdFrom) — evita
+  // que um cliente novo apareça logo com meses de "dias em falta" que
+  // antecedem a sua existência.
+  if (op.createdFrom){
+    const cfY = Number(op.createdFrom.slice(0,4)), cfM = Number(op.createdFrom.slice(5,7));
+    if (cfY>startY || (cfY===startY && cfM>startM)){ startY = cfY; startM = cfM; }
   }
   const missing = [];
   let y = startY, m = startM;
@@ -3602,7 +3614,7 @@ function renderConfig(){
     const entCount = op.repeating ? op.repeating.entities.length : 0;
     item.innerHTML = `
       <div>
-        <div class="name">${op.name} <span class="de-badge ${op.active?'active':'inactive'}">${op.active?'ativa':'inativa'}</span> <span class="de-badge" style="background:rgba(48,124,224,0.14);color:var(--blue);">${op.sector||'Outros'}</span></div>
+        <div class="name">${op.name} <span class="de-badge ${op.active?'active':'inactive'}">${op.active?'ativa':'inativa'}</span> <span class="de-badge" style="background:rgba(48,124,224,0.14);color:var(--blue);">${op.sector||'Outros'}</span>${op.alertsEnabled===false?' <span class="de-badge inactive" title="Alertas de dados em falta desativados para este cliente">alertas off</span>':''}</div>
         <div class="meta">${fieldCount} campo(s)${entCount ? ' · '+entCount+' '+op.repeating.entityLabel.toLowerCase()+'(s)' : ''}${op.driverField&&op.driverField.enabled?' · campo motorista ativo':''}</div>
       </div>
       <div style="color:var(--blue);font-size:18px;transition:transform .15s;${configExpanded===op.id?'transform:rotate(180deg);':''}">▾</div>
@@ -3633,11 +3645,17 @@ function renderConfig(){
   header.querySelector('#cfg-add-op').onclick = async ()=>{
     const name = prompt('Nome da nova operação (ex: nome do cliente):');
     if (!name) return;
+    const alertsEnabled = confirm('Ativar alertas de dados em falta para este cliente?\n\nOK = Ativar alertas · Cancelar = Desativar alertas\n\n(podes mudar isto depois em Configurações)');
     const id = slug(name) + '_' + uid();
-    STATE.operations.push({ id, name: name.toUpperCase(), sector:'Outros', active:true, fields:[{key:'entregues',label:'Entregues',role:'entregues'},{key:'nao_entregues',label:'Não Entregues',role:'nao_entregues'}], repeating:null, driverField:{enabled:false,list:[]} });
+    STATE.operations.push({
+      id, name: name.toUpperCase(), sector:'Outros', active:true,
+      fields:[{key:'entregues',label:'Entregues',role:'entregues'},{key:'nao_entregues',label:'Não Entregues',role:'nao_entregues'}],
+      repeating:null, driverField:{enabled:false,list:[]},
+      createdFrom: todayISO(), alertsEnabled
+    });
     await saveOperations(STATE.operations);
     configExpanded = id;
-    await logEdit('Criou operação', name);
+    await logEdit('Criou operação', name + (alertsEnabled ? ' (alertas ativos a partir de hoje)' : ' (alertas desativados)'));
     toast('Operação criada: ' + name);
     render();
   };
@@ -3697,6 +3715,17 @@ function renderOpEditor(op){
           <option value="1" ${op.active?'selected':''}>Ativa</option>
           <option value="0" ${!op.active?'selected':''}>Inativa</option>
         </select>
+      </div>
+      <div class="de-field">
+        <label>Alertas de dados em falta</label>
+        <select id="op-alerts-enabled">
+          <option value="1" ${op.alertsEnabled!==false?'selected':''}>Ativos</option>
+          <option value="0" ${op.alertsEnabled===false?'selected':''}>Desativados</option>
+        </select>
+      </div>
+      <div class="de-field">
+        <label>Alertas a partir de</label>
+        <input type="date" id="op-alerts-from" value="${op.createdFrom || ''}" />
       </div>
       <button class="de-btn ghost small" id="op-save">Guardar alterações</button>
       <button class="de-btn danger" id="op-delete">Remover operação</button>
@@ -4025,6 +4054,8 @@ function renderOpEditor(op){
     op.name = editor.querySelector('#op-name').value.trim() || op.name;
     op.sector = editor.querySelector('#op-sector').value;
     op.active = editor.querySelector('#op-active').value === '1';
+    op.alertsEnabled = editor.querySelector('#op-alerts-enabled').value === '1';
+    op.createdFrom = editor.querySelector('#op-alerts-from').value || null;
     op.workDays = Array.from(editor.querySelectorAll('[data-workday]:checked')).map(cb=>Number(cb.dataset.workday));
     await saveOperations(STATE.operations);
     await logEdit('Atualizou operação', op.name);
